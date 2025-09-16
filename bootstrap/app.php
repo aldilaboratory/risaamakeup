@@ -10,9 +10,22 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        //
+    ->withMiddleware(function (Middleware $middleware) {
+        // Alias middleware route
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+        ]);
+
+        // (Opsional) redirect user setelah login secara global
+        $middleware->redirectUsersTo(function () {
+            return auth()->check() && auth()->user()->role === 'admin'
+                ? route('admin.dashboard')
+                : route('dashboard');
+        });
+
+        // (Opsional) redirect guest ke halaman login
+        // $middleware->redirectGuestsTo(fn () => route('login'));
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
+    ->withExceptions(function ($exceptions) {
         //
     })->create();

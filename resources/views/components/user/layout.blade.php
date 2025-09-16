@@ -356,12 +356,12 @@
 </head>
 <body>
     <!-- Navigation -->
-    @extends('components.navigation')
+    @include('components.navigation')
 
     {{ $slot }}
 
     <!-- Footer -->
-    @extends('components.footer')
+    @include('components.footer')
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
