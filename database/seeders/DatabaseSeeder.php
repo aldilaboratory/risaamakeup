@@ -13,14 +13,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(CategorySeeder::class);
+
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Risa Nurfitriah',
-            'email' => 'nurfitriahrisa@gmail.com',
-            'phone' => '088555666111',
-            'password' => 'risa1234',
-            'role' => 'admin',
-        ]);
+        // User::factory()->create([
+        //     'name' => 'Risa Nurfitriah',
+        //     'email' => 'nurfitriahrisa@gmail.com',
+        //     'phone' => '088555666111',
+        //     'password' => 'risa1234',
+        //     'role' => 'admin',
+        // ]);
     }
 }

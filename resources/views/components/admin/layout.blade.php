@@ -36,7 +36,7 @@
         <div class="main-panel">
           <div class="content-wrapper">
             <div class="row">
-              {{ $slot }}
+              @yield('content')
             </div>
           </div>
           <!-- content-wrapper ends -->
@@ -69,5 +69,35 @@
     <script src="{{ asset('admin/js/dashboard.js') }}"></script>
     <!-- <script src="assets/js/Chart.roundedBarCharts.js"></script> -->
     <!-- End custom js for this page-->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @if(session('success'))
+      <script>
+        Swal.fire({
+          icon: 'success',
+          text: '{{ session('success') }}',
+          timer: 5000,
+          timerProgressBar: false,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top',
+          background: '#E6FFE6',
+        });
+      </script>
+    @endif
+
+    @if(session('error'))
+      <script>
+        Swal.fire({
+          icon: 'error',
+          text: '{{ session('error') }}',
+          timer: 5000,
+          timerProgressBar: false,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top',
+          background: '#ffefea',
+        });
+      </script>
+    @endif
   </body>
 </html>

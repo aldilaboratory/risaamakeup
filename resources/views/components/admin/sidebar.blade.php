@@ -14,13 +14,13 @@
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#">
+              <a class="nav-link" href="{{ route('admin.packages.index') }}">
                 <i class="menu-icon mdi mdi-table"></i>
                 <span class="menu-title">Packages</span>
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#">
+              <a class="nav-link" href="{{ route('admin.categories.index') }}">
                 <i class="menu-icon mdi mdi-layers-outline"></i>
                 <span class="menu-title">Kategori</span>
               </a>

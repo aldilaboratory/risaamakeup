@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Package;
 use Illuminate\Http\Request;
 
 class PackageController extends Controller
@@ -34,15 +33,15 @@ class PackageController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Package $package)
+    public function show(string $id)
     {
-        
+        //
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Package $package)
+    public function edit(string $id)
     {
         //
     }
@@ -50,7 +49,7 @@ class PackageController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Package $package)
+    public function update(Request $request, string $id)
     {
         //
     }
@@ -58,7 +57,7 @@ class PackageController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Package $package)
+    public function destroy(string $id)
     {
         //
     }
