@@ -37,5 +37,15 @@
                 <span class="menu-title">Data Admin</span>
               </a>
             </li>
+            <li class="nav-item">
+              <hr class="mb-0">
+              <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="nav-link text-danger border-0 text-center">
+                    <i class="mdi mdi-power text-danger me-2"></i>
+                    Keluar
+                </button>
+              </form>
+            </li>
           </ul>
         </nav>

@@ -21,27 +21,6 @@
               <h3 class="welcome-sub-text">Your performance summary this week </h3>
             </li>
           </ul>
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item dropdown d-none d-lg-block user-dropdown">
-              <a class="nav-link" id="UserDropdown" href="#" data-bs-toggle="dropdown" aria-expanded="false">
-                <img class="img-xs rounded-circle" src="{{ asset('admin/images/profile.png') }}" alt="Profile image"> </a>
-              <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="UserDropdown">
-                <div class="dropdown-header text-center">
-                  <img class="img-md rounded-circle" src="{{ asset('admin/images/profile.png') }}" alt="Profile image">
-                  <p class="mb-1 mt-3 fw-semibold">Allen Moreno</p>
-                  <p class="fw-light text-muted mb-0">allenmoreno@gmail.com</p>
-                </div>
-                <hr class="mb-0">
-                <form method="POST" action="{{ route('logout') }}">
-                  @csrf
-                  <button type="submit" class="dropdown-item text-danger border-0">
-                      <i class="dropdown-item-icon mdi mdi-power text-danger me-2"></i>
-                      Keluar
-                  </button>
-                </form>
-              </div>
-            </li>
-          </ul>
           <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-bs-toggle="offcanvas">
             <span class="mdi mdi-menu"></span>
           </button>
