@@ -20,8 +20,16 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label">Deskripsi</label>
-        <textarea name="description" rows="5" class="form-control">{{ old('description', $package->description) }}</textarea>
+        <label class="form-label">Deskripsi (satu baris = satu bullet)</label>
+        <textarea name="description" rows="6" class="form-control" style="height: 100px"
+          placeholder="Contoh:
+            • Bridal makeup & hair styling
+            • 2.5 jam sesi
+            • Touch-up kit
+            • Photo ready finish">{{ old('description', isset($package)
+            ? implode("\n", $package->description_bullets)
+            : '') }}</textarea>
+        <div class="form-text">Tulis setiap poin di baris baru. Simbol • opsional.</div>
       </div>
       <div class="mb-3">
         <label class="form-label">Kategori</label>

@@ -26,8 +26,16 @@
     <input type="number" name="duration_minutes" min="0" class="form-control" value="{{ old('duration_minutes') }}">
   </div>
   <div class="mb-3">
-    <label class="form-label">Deskripsi</label>
-    <textarea name="description" rows="4" class="form-control">{{ old('description') }}</textarea>
+    <label class="form-label">Deskripsi (satu baris = satu bullet)</label>
+    <textarea name="description" rows="6" class="form-control" style="height: 100px"
+      placeholder="Contoh:
+        • Bridal makeup & hair styling
+        • 2.5 jam sesi
+        • Touch-up kit
+        • Photo ready finish">{{ old('description', isset($package)
+        ? implode("\n", $package->description_bullets)
+        : '') }}</textarea>
+    <div class="form-text">Tulis setiap poin di baris baru. Simbol • opsional.</div>
   </div>
   <div class="mb-3">
     <label class="form-label">Cover Image</label>

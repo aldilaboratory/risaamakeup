@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\AdminPackageController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ProfileController;
+use App\Models\Category;
+use App\Models\Package;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -14,7 +16,28 @@ Route::get('/', function () {
         return redirect()->route('admin.dashboard');
     }
 
-    return view('welcome');
+    $order = ['akad','wedding','prewedding','engagement'];
+
+    $categories = Category::whereIn('slug', $order)
+        ->with(['packages' => function ($q) {
+            $q->where('status', 'active')
+              ->latest()
+              ->take(3);
+        }])
+        ->get()
+        ->sortBy(fn($c) => array_search($c->slug, $order))
+        ->values();
+
+    return view('welcome', compact('categories','order'));
+});
+
+// PUBLIC (opsional): list & detail by slug
+Route::get('/packages', [PackageController::class, 'indexPublic'])->name('packages.public.index');
+
+Route::scopeBindings()->group(function () {
+    Route::get('/categories/{category:slug}/packages/{package:slug}',
+        [PackageController::class, 'showPublic']
+    )->name('packages.public.show');
 });
 
 Route::get('/dashboard', function () {
@@ -27,22 +50,10 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// PUBLIC (opsional): list & detail by slug
-Route::get('/packages', [PackageController::class, 'indexPublic'])->name('packages.public.index');
-Route::scopeBindings()->group(function () {
-    Route::get('/categories/{category:slug}/packages/{package:slug}', function (Category $category, Package $package) {
-        // $package otomatis dicari TERBATAS pada $category (scoped)
-        // pastikan relasi: Package belongsTo Category
-        return view('packages.show', compact('category','package'));
-    })->name('packages.public.show');
-});
-
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    Route::resource('packages', PackageController::class);
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {

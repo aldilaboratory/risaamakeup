@@ -8,11 +8,10 @@ class Package extends Model
 {
     protected $fillable = [
         'category_id','title','slug','price','duration_minutes',
-        'description','cover_image','gallery','status'
+        'description','cover_image','status'
     ];
 
     protected $casts = [
-        'gallery' => 'array',
         'price' => 'integer',
     ];
 
@@ -42,4 +41,24 @@ class Package extends Model
         return $slug;
     }
 
+    public function scopeActive($q){ return $q->where('status','active'); }
+
+    public function getPriceFormattedAttribute(){
+        return 'Rp '.number_format($this->price,0,',','.');
+    }
+
+    public function getDescriptionBulletsAttribute(): array
+    {
+        return collect(preg_split('/\r\n|\r|\n/', (string) $this->description))
+            ->map(fn ($s) => trim($s))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    // public function getGalleryAttribute($value)
+    // {
+    //     // kalau null → jadikan []
+    //     return $value ? json_decode($value, true) : [];
+    // }
 }
