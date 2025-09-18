@@ -8,8 +8,11 @@ class Category extends Model
 {
     protected $fillable = ['name','slug'];
 
-    public function packages() {
-        return $this->hasMany(Package::class);
+    public function packages()
+    {
+        return $this->hasMany(\App\Models\Package::class)
+                    ->where('status', 'active')
+                    ->orderBy('price', 'asc'); // selalu urut ASC
     }
 
     // auto slug
@@ -22,4 +25,5 @@ class Category extends Model
     public function getRouteKeyName(): string {
         return 'slug';
     }
+    
 }

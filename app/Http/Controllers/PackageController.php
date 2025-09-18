@@ -11,17 +11,15 @@ class PackageController extends Controller
     // Halaman list publik (tabs)
     public function indexPublic()
     {
-        // urutan sesuai keinginan
         $order = ['akad','wedding','prewedding','engagement'];
 
-        // ambil kategori + packages aktif (max 3 per kategori untuk tampilan)
         $categories = Category::whereIn('slug', $order)
             ->with(['packages' => function ($q) {
                 $q->where('status', 'active')
-                  ->take(3);
+                ->orderBy('price', 'asc') // <= urutkan termurah dulu
+                ->take(3);                // <= jika ingin hanya 3 paket per kategori
             }])
             ->get()
-            // sort collection sesuai $order
             ->sortBy(fn($c) => array_search($c->slug, $order))
             ->values();
 

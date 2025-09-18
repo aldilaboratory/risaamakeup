@@ -4,6 +4,7 @@
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminPackageController;
+use App\Http\Controllers\Bookingnpm --versionController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ProfileController;
@@ -29,6 +30,14 @@ Route::get('/', function () {
         ->values();
 
     return view('welcome', compact('categories','order'));
+});
+
+Route::scopeBindings()->group(function () {
+    Route::get('/booking/{category:slug}/{package:slug}', [BookingController::class, 'create'])
+        ->name('booking.create');
+
+    Route::post('/booking/{category:slug}/{package:slug}', [BookingController::class, 'store'])
+        ->name('booking.store');
 });
 
 // PUBLIC (opsional): list & detail by slug
