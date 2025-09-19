@@ -20,9 +20,12 @@ class BookingController extends Controller
 
     public function store(Request $request, Category $category, Package $package)
     {
+        // Calculate minimum date (2 days from today)
+        $minDate = now()->addDays(2)->format('Y-m-d');
+        
         $data = $request->validate([
             'city'        => 'nullable|string|max:100',
-            'event_date'  => 'required|date|after_or_equal:today',
+            'event_date'  => 'required|date|after_or_equal:' . $minDate,
             'event_time'  => 'required',
             'location'    => 'required|string|max:200',
             'name'        => 'required|string|max:120',
@@ -31,6 +34,7 @@ class BookingController extends Controller
             'agree'       => 'accepted',
         ], [
             'agree.accepted' => 'Anda harus menyetujui Syarat & Ketentuan.',
+            'event_date.after_or_equal' => 'Tanggal acara minimal 2 hari dari hari ini.',
         ]);
 
         // Set fixed values for simplified booking

@@ -95,7 +95,7 @@
         </div>
 
         <div class="text-center mt-4">
-          <a href="{{ route('packages.public.index') }}" class="btn btn-primary me-3">Lihat Paket Lainnya</a>
+          <!-- <a href="{{ route('packages.public.index') }}" class="btn btn-primary me-3">Lihat Paket Lainnya</a> -->
           <a href="https://wa.me/6281234567890?text={{ urlencode('Halo, saya sudah melakukan booking dengan ID: ' . $booking->id . '. Mohon konfirmasi untuk detail acara.') }}" 
              class="btn btn-success" target="_blank">
             <i class="fab fa-whatsapp me-2"></i>Hubungi via WhatsApp

@@ -50,8 +50,9 @@
         <div class="row g-3">
           <div class="col-6">
             <label class="form-label">Tanggal Acara</label>
-            <input type="date" name="event_date" value="{{ old('event_date') }}" class="form-control @error('event_date') is-invalid @enderror" required>
+            <input type="date" name="event_date" id="event_date" value="{{ old('event_date') }}" class="form-control @error('event_date') is-invalid @enderror" required>
             @error('event_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            <div class="form-text">Minimal 2 hari dari hari ini</div>
           </div>
           <div class="col-6">
             <label class="form-label">Waktu</label>
@@ -105,5 +106,75 @@
   </div>
 </section>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const eventDateInput = document.getElementById('event_date');
+    
+    // Set minimum date to 2 days from today
+    const today = new Date();
+    const minDate = new Date(today);
+    minDate.setDate(today.getDate() + 2);
+    
+    // Format date to YYYY-MM-DD for input
+    const formatDate = (date) => {
+        return date.toISOString().split('T')[0];
+    };
+    
+    // Set min attribute
+    eventDateInput.setAttribute('min', formatDate(minDate));
+    
+    // Add validation on change
+    eventDateInput.addEventListener('change', function() {
+        const selectedDate = new Date(this.value);
+        const minAllowedDate = new Date(today);
+        minAllowedDate.setDate(today.getDate() + 2);
+        
+        if (selectedDate < minAllowedDate) {
+            this.setCustomValidity('Tanggal acara minimal 2 hari dari hari ini');
+            this.classList.add('is-invalid');
+            
+            // Show error message
+            let errorDiv = this.parentNode.querySelector('.date-error');
+            if (!errorDiv) {
+                errorDiv = document.createElement('div');
+                errorDiv.className = 'invalid-feedback date-error';
+                this.parentNode.appendChild(errorDiv);
+            }
+            errorDiv.textContent = 'Tanggal acara minimal 2 hari dari hari ini';
+        } else {
+            this.setCustomValidity('');
+            this.classList.remove('is-invalid');
+            
+            // Remove error message
+            const errorDiv = this.parentNode.querySelector('.date-error');
+            if (errorDiv) {
+                errorDiv.remove();
+            }
+        }
+    });
+    
+    // Prevent form submission if date is invalid
+    const form = eventDateInput.closest('form');
+    form.addEventListener('submit', function(e) {
+        const selectedDate = new Date(eventDateInput.value);
+        const minAllowedDate = new Date(today);
+        minAllowedDate.setDate(today.getDate() + 2);
+        
+        if (selectedDate < minAllowedDate) {
+            e.preventDefault();
+            eventDateInput.focus();
+            eventDateInput.classList.add('is-invalid');
+            
+            let errorDiv = eventDateInput.parentNode.querySelector('.date-error');
+            if (!errorDiv) {
+                errorDiv = document.createElement('div');
+                errorDiv.className = 'invalid-feedback date-error';
+                eventDateInput.parentNode.appendChild(errorDiv);
+            }
+            errorDiv.textContent = 'Tanggal acara minimal 2 hari dari hari ini';
+        }
+    });
+});
+</script>
 
 </x-user>
