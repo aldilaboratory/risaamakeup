@@ -1,4 +1,6 @@
-<x-admin.layout>
+@extends('components.admin.layout')
+
+@section('content')
 <div class="col-sm-12">
                 <div class="home-tab">
                   <div class="d-sm-flex align-items-center justify-content-between border-bottom">
@@ -28,36 +30,89 @@
                     <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview">
                       <div class="row">
                         <div class="col-sm-12">
-                          <div class="statistics-details d-flex align-items-center justify-content-between">
-                            <div>
-                              <p class="statistics-title">Bounce Rate</p>
-                              <h3 class="rate-percentage">32.53%</h3>
-                              <p class="text-danger d-flex"><i class="mdi mdi-menu-down"></i><span>-0.5%</span></p>
+                          <div class="row">
+                            <!-- Total Booking Card -->
+                            <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+                              <div class="card">
+                                <div class="card-body">
+                                  <div class="row">
+                                    <div class="col-9">
+                                      <div class="d-flex align-items-center align-self-start">
+                                        <h3 class="mb-0">{{ $totalBookings }}</h3>
+                                      </div>
+                                      <h6 class="text-muted font-weight-normal">Total Booking</h6>
+                                    </div>
+                                    <div class="col-3">
+                                      <div class="icon icon-box-primary">
+                                        <span class="mdi mdi-calendar-multiple icon-item"></span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <p class="statistics-title">Page Views</p>
-                              <h3 class="rate-percentage">7,682</h3>
-                              <p class="text-success d-flex"><i class="mdi mdi-menu-up"></i><span>+0.1%</span></p>
+                            
+                            <!-- Pending Booking Card -->
+                            <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+                              <div class="card">
+                                <div class="card-body">
+                                  <div class="row">
+                                    <div class="col-9">
+                                      <div class="d-flex align-items-center align-self-start">
+                                        <h3 class="mb-0">{{ $pendingBookings }}</h3>
+                                      </div>
+                                      <h6 class="text-muted font-weight-normal">Booking Pending</h6>
+                                    </div>
+                                    <div class="col-3">
+                                      <div class="icon icon-box-warning">
+                                        <span class="mdi mdi-clock-outline icon-item"></span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <p class="statistics-title">New Sessions</p>
-                              <h3 class="rate-percentage">68.8</h3>
-                              <p class="text-danger d-flex"><i class="mdi mdi-menu-down"></i><span>68.8</span></p>
+                            
+                            <!-- Paid Booking Card -->
+                            <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+                              <div class="card">
+                                <div class="card-body">
+                                  <div class="row">
+                                    <div class="col-9">
+                                      <div class="d-flex align-items-center align-self-start">
+                                        <h3 class="mb-0">{{ $paidBookings }}</h3>
+                                      </div>
+                                      <h6 class="text-muted font-weight-normal">Booking Lunas</h6>
+                                    </div>
+                                    <div class="col-3">
+                                      <div class="icon icon-box-success">
+                                        <span class="mdi mdi-check-circle icon-item"></span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div class="d-none d-md-block">
-                              <p class="statistics-title">Avg. Time on Site</p>
-                              <h3 class="rate-percentage">2m:35s</h3>
-                              <p class="text-success d-flex"><i class="mdi mdi-menu-down"></i><span>+0.8%</span></p>
-                            </div>
-                            <div class="d-none d-md-block">
-                              <p class="statistics-title">New Sessions</p>
-                              <h3 class="rate-percentage">68.8</h3>
-                              <p class="text-danger d-flex"><i class="mdi mdi-menu-down"></i><span>68.8</span></p>
-                            </div>
-                            <div class="d-none d-md-block">
-                              <p class="statistics-title">Avg. Time on Site</p>
-                              <h3 class="rate-percentage">2m:35s</h3>
-                              <p class="text-success d-flex"><i class="mdi mdi-menu-down"></i><span>+0.8%</span></p>
+                            
+                            <!-- Today Booking Card -->
+                            <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+                              <div class="card">
+                                <div class="card-body">
+                                  <div class="row">
+                                    <div class="col-9">
+                                      <div class="d-flex align-items-center align-self-start">
+                                        <h3 class="mb-0">{{ $todayBookings }}</h3>
+                                      </div>
+                                      <h6 class="text-muted font-weight-normal">Booking Hari Ini</h6>
+                                    </div>
+                                    <div class="col-3">
+                                      <div class="icon icon-box-info">
+                                        <span class="mdi mdi-calendar-today icon-item"></span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -110,205 +165,96 @@
                                 <div class="card-body">
                                   <div class="d-sm-flex justify-content-between align-items-start">
                                     <div>
-                                      <h4 class="card-title card-title-dash">Pending Requests</h4>
-                                      <p class="card-subtitle card-subtitle-dash">You have 50+ new requests</p>
+                                      <h4 class="card-title card-title-dash">
+                                        <i class="mdi mdi-calendar-clock text-primary me-2"></i>
+                                        Booking Masuk Terbaru
+                                      </h4>
+                                      <p class="card-subtitle card-subtitle-dash">
+                                        <i class="mdi mdi-information-outline me-1"></i>
+                                        {{ $recentBookings->count() }} booking terbaru
+                                      </p>
                                     </div>
                                     <div>
-                                      <button class="btn btn-primary btn-lg text-white mb-0 me-0" type="button"><i class="mdi mdi-account-plus"></i>Add new member</button>
+                                      <a href="{{ route('admin.orders.index') }}" class="btn btn-primary btn-lg text-white mb-0 me-0">
+                                        <i class="mdi mdi-eye me-1"></i>Lihat Semua
+                                      </a>
                                     </div>
                                   </div>
-                                  <div class="table-responsive  mt-1">
+                                  <div class="table-responsive mt-1">
                                     <table class="table select-table">
                                       <thead>
                                         <tr>
-                                          <th>
-                                            <div class="form-check form-check-flat mt-0">
-                                              <label class="form-check-label">
-                                                <input type="checkbox" class="form-check-input" aria-checked="false" id="check-all"><i class="input-helper"></i></label>
-                                            </div>
-                                          </th>
-                                          <th>Customer</th>
-                                          <th>Company</th>
-                                          <th>Progress</th>
-                                          <th>Status</th>
+                                          <th><i class="mdi mdi-account-outline me-1"></i>Customer</th>
+                                          <th><i class="mdi mdi-package-variant me-1"></i>Package</th>
+                                          <th><i class="mdi mdi-calendar-range me-1"></i>Tanggal Acara</th>
+                                          <th><i class="mdi mdi-currency-usd me-1"></i>Total</th>
+                                          <th><i class="mdi mdi-flag-outline me-1"></i>Status</th>
                                         </tr>
                                       </thead>
                                       <tbody>
+                                        @forelse($recentBookings as $booking)
                                         <tr>
-                                          <td>
-                                            <div class="form-check form-check-flat mt-0">
-                                              <label class="form-check-label">
-                                                <input type="checkbox" class="form-check-input" aria-checked="false"><i class="input-helper"></i></label>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <div class="d-flex ">
-                                              <img src="assets/images/faces/face1.jpg" alt="">
-                                              <div>
-                                                <h6>Brandon Washington</h6>
-                                                <p>Head admin</p>
-                                              </div>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <h6>Company name 1</h6>
-                                            <p>company type</p>
-                                          </td>
-                                          <td>
-                                            <div>
-                                              <div class="d-flex justify-content-between align-items-center mb-1 max-width-progress-wrap">
-                                                <p class="text-success">79%</p>
-                                                <p>85/162</p>
-                                              </div>
-                                              <div class="progress progress-md">
-                                                <div class="progress-bar bg-success" role="progressbar" style="width: 85%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-                                              </div>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <div class="badge badge-opacity-warning">In progress</div>
-                                          </td>
-                                        </tr>
-                                        <tr>
-                                          <td>
-                                            <div class="form-check form-check-flat mt-0">
-                                              <label class="form-check-label">
-                                                <input type="checkbox" class="form-check-input" aria-checked="false"><i class="input-helper"></i></label>
-                                            </div>
-                                          </td>
                                           <td>
                                             <div class="d-flex">
-                                              <img src="assets/images/faces/face2.jpg" alt="">
+                                              <div class="avatar-sm rounded-circle d-flex align-items-center justify-content-center me-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 40px; height: 40px;">
+                                                <i class="mdi mdi-account text-white"></i>
+                                              </div>
                                               <div>
-                                                <h6>Laura Brooks</h6>
-                                                <p>Head admin</p>
+                                                <h6 class="mb-1">{{ $booking->name }}</h6>
+                                                <p class="text-muted small mb-0">
+                                                  <i class="mdi mdi-phone me-1"></i>{{ $booking->phone }}
+                                                </p>
                                               </div>
                                             </div>
                                           </td>
                                           <td>
-                                            <h6>Company name 1</h6>
-                                            <p>company type</p>
+                                            <h6 class="mb-1">
+                                              <i class="mdi mdi-palette me-1 text-primary"></i>
+                                              {{ $booking->package->title ?? 'N/A' }}
+                                            </h6>
+                                            <p class="text-muted small mb-0">{{ $booking->package->description ?? 'Paket Makeup' }}</p>
                                           </td>
                                           <td>
                                             <div>
-                                              <div class="d-flex justify-content-between align-items-center mb-1 max-width-progress-wrap">
-                                                <p class="text-success">65%</p>
-                                                <p>85/162</p>
-                                              </div>
-                                              <div class="progress progress-md">
-                                                <div class="progress-bar bg-success" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
-                                              </div>
+                                              <h6 class="mb-1">
+                                                <i class="mdi mdi-calendar me-1 text-info"></i>
+                                                {{ \Carbon\Carbon::parse($booking->event_date)->format('d M Y') }}
+                                              </h6>
+                                              <p class="text-muted small mb-0">
+                                                <i class="mdi mdi-clock-outline me-1"></i>
+                                                {{ \Carbon\Carbon::parse($booking->event_time)->format('H:i') }}
+                                              </p>
                                             </div>
                                           </td>
                                           <td>
-                                            <div class="badge badge-opacity-warning">In progress</div>
+                                            <h6 class="mb-0">
+                                              <i class="mdi mdi-cash me-1 text-success"></i>
+                                              Rp {{ number_format($booking->pay_now, 0, ',', '.') }}
+                                            </h6>
+                                          </td>
+                                          <td>
+                                            @if($booking->payment_status === 'paid')
+                                              @if($booking->status === 'pending')
+                                                <div class="badge badge-opacity-warning">Menunggu Konfirmasi</div>
+                                              @elseif($booking->status === 'approved')
+                                                <div class="badge badge-opacity-success">Disetujui</div>
+                                              @elseif($booking->status === 'completed')
+                                                <div class="badge badge-opacity-success">Selesai</div>
+                                              @else
+                                                <div class="badge badge-opacity-danger">{{ ucfirst($booking->status) }}</div>
+                                              @endif
+                                            @else
+                                              <div class="badge badge-opacity-secondary">Belum Bayar</div>
+                                            @endif
                                           </td>
                                         </tr>
+                                        @empty
                                         <tr>
-                                          <td>
-                                            <div class="form-check form-check-flat mt-0">
-                                              <label class="form-check-label">
-                                                <input type="checkbox" class="form-check-input" aria-checked="false"><i class="input-helper"></i></label>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <div class="d-flex">
-                                              <img src="assets/images/faces/face3.jpg" alt="">
-                                              <div>
-                                                <h6>Wayne Murphy</h6>
-                                                <p>Head admin</p>
-                                              </div>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <h6>Company name 1</h6>
-                                            <p>company type</p>
-                                          </td>
-                                          <td>
-                                            <div>
-                                              <div class="d-flex justify-content-between align-items-center mb-1 max-width-progress-wrap">
-                                                <p class="text-success">65%</p>
-                                                <p>85/162</p>
-                                              </div>
-                                              <div class="progress progress-md">
-                                                <div class="progress-bar bg-warning" role="progressbar" style="width: 38%" aria-valuenow="38" aria-valuemin="0" aria-valuemax="100"></div>
-                                              </div>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <div class="badge badge-opacity-warning">In progress</div>
+                                          <td colspan="5" class="text-center py-4">
+                                            <div class="text-muted">Belum ada booking masuk</div>
                                           </td>
                                         </tr>
-                                        <tr>
-                                          <td>
-                                            <div class="form-check form-check-flat mt-0">
-                                              <label class="form-check-label">
-                                                <input type="checkbox" class="form-check-input" aria-checked="false"><i class="input-helper"></i></label>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <div class="d-flex">
-                                              <img src="assets/images/faces/face4.jpg" alt="">
-                                              <div>
-                                                <h6>Matthew Bailey</h6>
-                                                <p>Head admin</p>
-                                              </div>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <h6>Company name 1</h6>
-                                            <p>company type</p>
-                                          </td>
-                                          <td>
-                                            <div>
-                                              <div class="d-flex justify-content-between align-items-center mb-1 max-width-progress-wrap">
-                                                <p class="text-success">65%</p>
-                                                <p>85/162</p>
-                                              </div>
-                                              <div class="progress progress-md">
-                                                <div class="progress-bar bg-danger" role="progressbar" style="width: 15%" aria-valuenow="15" aria-valuemin="0" aria-valuemax="100"></div>
-                                              </div>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <div class="badge badge-opacity-danger">Pending</div>
-                                          </td>
-                                        </tr>
-                                        <tr>
-                                          <td>
-                                            <div class="form-check form-check-flat mt-0">
-                                              <label class="form-check-label">
-                                                <input type="checkbox" class="form-check-input" aria-checked="false"><i class="input-helper"></i></label>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <div class="d-flex">
-                                              <img src="assets/images/faces/face5.jpg" alt="">
-                                              <div>
-                                                <h6>Katherine Butler</h6>
-                                                <p>Head admin</p>
-                                              </div>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <h6>Company name 1</h6>
-                                            <p>company type</p>
-                                          </td>
-                                          <td>
-                                            <div>
-                                              <div class="d-flex justify-content-between align-items-center mb-1 max-width-progress-wrap">
-                                                <p class="text-success">65%</p>
-                                                <p>85/162</p>
-                                              </div>
-                                              <div class="progress progress-md">
-                                                <div class="progress-bar bg-success" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
-                                              </div>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <div class="badge badge-opacity-success">Completed</div>
-                                          </td>
-                                        </tr>
+                                        @endforelse
                                       </tbody>
                                     </table>
                                   </div>
@@ -442,4 +388,6 @@
                   </div>
                 </div>
               </div>
-</x-admin>
+              
+
+@endsection

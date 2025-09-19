@@ -23,10 +23,17 @@
     <!-- inject:css -->
     <link rel="stylesheet" href="{{ asset('admin/css/style.css') }}">
     <!-- endinject -->
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
     <link rel="shortcut icon" href="{{ asset('admin/images/favicon.png') }}" />
   </head>
   <body class="with-welcome-text">
     <div class="container-scroller">
+      <!-- Pro Banner -->
+      <div id="proBanner" class="d-none">
+        <button id="bannerClose" class="btn-close" style="display: none;"></button>
+        <!-- Banner content if needed -->
+      </div>
       <!-- partial:partials/_navbar.html -->
       @include('components.admin.navigation')
       <!-- partial -->

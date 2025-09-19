@@ -16,10 +16,10 @@
 
       <div class="navbar-actions d-flex align-items-center gap-2">
         <!-- Cart selalu tampil -->
-        <a href="#" class="nav-icon-btn me-2" title="Shopping Cart">
+        <!-- <a href="#" class="nav-icon-btn me-2" title="Shopping Cart">
           <i class="fas fa-shopping-bag"></i>
           <span class="cart-count">0</span>
-        </a>
+        </a> -->
 
         @guest
           <!-- Guest: sembunyikan ikon profil, tampilkan tombol Register -->

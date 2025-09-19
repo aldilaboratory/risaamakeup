@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
 use Illuminate\Http\Request;
 
 class AdminDashboardController extends Controller
@@ -12,7 +13,34 @@ class AdminDashboardController extends Controller
      */
     public function index()
     {
-        return view('admin.dashboard');
+        // Ambil booking masuk terbaru (10 terakhir)
+        $recentBookings = Booking::with(['package'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Statistik booking
+        $totalBookings = Booking::count();
+        $pendingBookings = Booking::where('status', 'pending')->count();
+        $paidBookings = Booking::where('payment_status', 'paid')->count();
+        $todayBookings = Booking::whereDate('created_at', today())->count();
+
+        // Debug untuk memastikan data ada
+        \Log::info('Dashboard Data:', [
+            'recentBookings_count' => $recentBookings->count(),
+            'totalBookings' => $totalBookings,
+            'pendingBookings' => $pendingBookings,
+            'paidBookings' => $paidBookings,
+            'todayBookings' => $todayBookings
+        ]);
+
+        return view('admin.dashboard', compact(
+            'recentBookings', 
+            'totalBookings', 
+            'pendingBookings', 
+            'paidBookings', 
+            'todayBookings'
+        ));
     }
 
     /**
