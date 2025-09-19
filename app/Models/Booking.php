@@ -9,7 +9,10 @@ class Booking extends Model
     protected $fillable = [
         'package_id','category_id','name','phone','city','location',
         'event_date','event_time','qty','dp_percent','subtotal',
-        'pay_now','notes','status'
+        'pay_now','notes','status',
+        'payment_status','midtrans_order_id','midtrans_snap_token',
+        'midtrans_transaction_id','midtrans_payment_type','midtrans_va_number',
+        'midtrans_pdf_url','midtrans_payload'
     ];
 
     public function package() {

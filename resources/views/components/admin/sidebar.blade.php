@@ -8,7 +8,7 @@
             </li>
             <hr class="m-0 text-light-emphasis">
             <li class="nav-item">
-              <a class="nav-link" href="#">
+              <a class="nav-link" href="{{ route('admin.orders.index') }}">
                 <i class="menu-icon mdi mdi-card-text-outline"></i>
                 <span class="menu-title">Pesanan</span>
               </a>

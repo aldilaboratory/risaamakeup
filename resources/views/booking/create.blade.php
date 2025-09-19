@@ -66,29 +66,7 @@
           @error('location')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
 
-        <!-- <div class="row g-3 mt-1">
-          <div class="col-6">
-            <label class="form-label">Jumlah orang</label>
-            <div class="input-group">
-              <button type="button" class="btn btn-outline-secondary" id="btn-minus">–</button>
-              <input type="number" id="qty" name="qty" value="{{ old('qty',1) }}" min="1" class="form-control text-center">
-              <button type="button" class="btn btn-outline-secondary" id="btn-plus">+</button>
-            </div>
-            @error('qty')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-          </div>
 
-          <div class="col-6">
-            <label class="form-label">Down Payment</label>
-            <div class="input-group">
-              <select name="dp_percent" id="dp_percent" class="form-select">
-                <option value="100" @selected(old('dp_percent',100)==100)>100%</option>
-                <option value="50"  @selected(old('dp_percent')==50)>50%</option>
-                <option value="0"   @selected(old('dp_percent')==0)>0%</option>
-              </select>
-              <span class="input-group-text">dibayar sekarang</span>
-            </div>
-          </div>
-        </div> -->
 
         
 
@@ -103,30 +81,21 @@
       <div class="col-lg-5">
         <div class="card shadow-sm">
           <div class="card-header bg-white">
-            <strong>Rincian Harga</strong>
+            <strong>Harga Paket</strong>
           </div>
           <div class="card-body">
-            <dl class="row mb-2">
-              <!-- <dt class="col-6">Harga Paket</dt>
-              <dd class="col-6 text-end" id="price_fmt">Rp {{ number_format($package->price,0,',','.') }}</dd> -->
+            <div class="text-center mb-4">
+              <div class="h3 text-primary fw-bold">Rp {{ number_format($package->price,0,',','.') }}</div>
+              <small class="text-muted">Harga sudah termasuk semua layanan</small>
+            </div>
 
-              <!-- <dt class="col-6">Qty</dt>
-              <dd class="col-6 text-end"><span id="qty_view">{{ old('qty',1) }}</span>x</dd> -->
-
-              <dt class="col-6">Total</dt>
-              <dd class="col-6 text-end" id="total_fmt">Rp {{ number_format($package->price * (int)old('qty',1),0,',','.') }}</dd>
-
-              <!-- <dt class="col-6">Pembayaran Saat Ini</dt>
-              <dd class="col-6 text-end fw-semibold text-primary" id="paynow_fmt">Rp {{ number_format($package->price * (int)old('qty',1),0,',','.') }}</dd> -->
-            </dl>
-
-            <!-- <div class="form-check mt-3">
+            <div class="form-check mt-3">
               <input class="form-check-input" type="checkbox" value="1" id="agree" name="agree" required>
               <label class="form-check-label" for="agree">
                 Saya menyetujui <a href="#" class="text-decoration-underline">Syarat & Ketentuan</a>
               </label>
               @error('agree')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-            </div> -->
+            </div>
 
             <button class="btn btn-primary w-100 mt-3">BOOKING SEKARANG</button>
           </div>
@@ -136,33 +105,5 @@
   </div>
 </section>
 
-{{-- JS hitung total --}}
-<script>
-(function(){
-  const unitPrice = {{ (int)$package->price }};
-  const qtyInput  = document.getElementById('qty');
-  const dpSel     = document.getElementById('dp_percent');
-  const qtyView   = document.getElementById('qty_view');
-  const totalFmt  = document.getElementById('total_fmt');
-  const payFmt    = document.getElementById('paynow_fmt');
 
-  function fmt(n){
-    return new Intl.NumberFormat('id-ID').format(n);
-  }
-  function calc(){
-    const qty = Math.max(1, parseInt(qtyInput.value || '1', 10));
-    const dp  = parseInt(dpSel.value || '100', 10);
-    const total = unitPrice * qty;
-    const pay   = Math.round(total * dp / 100);
-    qtyView.textContent = qty;
-    totalFmt.textContent = 'Rp ' + fmt(total);
-    payFmt.textContent   = 'Rp ' + fmt(pay);
-  }
-  qtyInput.addEventListener('input', calc);
-  dpSel.addEventListener('change', calc);
-  document.getElementById('btn-minus')?.addEventListener('click', () => { qtyInput.stepDown(); qtyInput.dispatchEvent(new Event('input')); });
-  document.getElementById('btn-plus')?.addEventListener('click', () => { qtyInput.stepUp();   qtyInput.dispatchEvent(new Event('input')); });
-  calc();
-})();
-</script>
 </x-user>

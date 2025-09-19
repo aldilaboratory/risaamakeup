@@ -4,7 +4,8 @@
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminPackageController;
-use App\Http\Controllers\Bookingnpm --versionController;
+use App\Http\Controllers\Admin\AdminOrderController;
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ProfileController;
@@ -33,12 +34,32 @@ Route::get('/', function () {
 });
 
 Route::scopeBindings()->group(function () {
-    Route::get('/booking/{category:slug}/{package:slug}', [BookingController::class, 'create'])
-        ->name('booking.create');
+// penting: letakkan ini dulu
+Route::get('/booking/{booking}/pay', [BookingController::class,'payPage'])
+    ->whereNumber('booking')
+    ->middleware('auth')
+    ->name('booking.pay.page');
 
-    Route::post('/booking/{category:slug}/{package:slug}', [BookingController::class, 'store'])
-        ->name('booking.store');
+Route::get('/booking/{booking}/thank-you', [BookingController::class,'thankYou'])
+    ->whereNumber('booking')
+    ->middleware('auth')
+    ->name('booking.thank-you');
+
+// baru setelah itu rute 2 segmen (category/package)
+Route::get('/booking/{category:slug}/{package:slug}', [BookingController::class, 'create'])
+    ->middleware('auth')
+    ->name('booking.create');
+Route::post('/booking/{category:slug}/{package:slug}', [BookingController::class, 'store'])
+    ->middleware('auth')
+    ->name('booking.store');
+
+    // Midtrans server → kita (webhook)
+    Route::post('/midtrans/notification', [BookingController::class,'notificationHandler'])
+        ->name('midtrans.notification');
 });
+
+Route::post('/midtrans/check', [BookingController::class, 'checkStatus'])
+    ->name('midtrans.check');
 
 // PUBLIC (opsional): list & detail by slug
 Route::get('/packages', [PackageController::class, 'indexPublic'])->name('packages.public.index');
@@ -70,6 +91,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::resource('categories', AdminCategoryController::class)->except('show');
     Route::resource('packages', AdminPackageController::class)->except('show');
+    
+    // Orders routes
+    Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{booking}', [AdminOrderController::class, 'show'])->name('orders.show');
+    Route::patch('/orders/{booking}/approve', [AdminOrderController::class, 'approve'])->name('orders.approve');
+    Route::patch('/orders/{booking}/reject', [AdminOrderController::class, 'reject'])->name('orders.reject');
+    Route::patch('/orders/{booking}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
 });
 
 require __DIR__.'/auth.php';
