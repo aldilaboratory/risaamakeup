@@ -46,6 +46,7 @@ class BookingController extends Controller
 
         // ⬅️ SIMPAN ke variabel!
         $booking = Booking::create([
+            'user_id'      => auth()->id(),
             'package_id'   => $package->id,
             'category_id'  => $category->id,
             'name'         => $data['name'],
@@ -102,14 +103,20 @@ class BookingController extends Controller
             'callbacks' => [
                 'finish' => route('booking.thank-you', ['booking' => $booking->id]),
             ],
+            'expiry' => [
+                'start_time' => now()->format('Y-m-d H:i:s O'),
+                'unit' => 'hour',
+                'duration' => 1
+            ],
         ];
 
         $snapToken = MidSnap::getSnapToken($params);
         
-        // Simpan order_id dan snap_token ke database
+        // Simpan order_id, snap_token, dan expires_at ke database
         $booking->update([
             'midtrans_order_id' => $orderId,
             'midtrans_snap_token' => $snapToken,
+            'expires_at' => now()->addHour(), // Expired 1 jam dari sekarang
         ]);
 
         return $snapToken;
@@ -273,5 +280,50 @@ class BookingController extends Controller
     public function thankYou(Booking $booking)
     {
         return view('booking.thank-you', compact('booking'));
+    }
+
+    // User booking tracking page
+    public function userBookings()
+    {
+        $bookings = Booking::where('user_id', auth()->id())
+            ->with(['package', 'category'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('booking.user-bookings', compact('bookings'));
+    }
+
+    // Regenerate snap token for expired tokens
+    public function regenerateSnapToken(Booking $booking)
+    {
+        // Pastikan booking milik user yang sedang login
+        if ($booking->user_id !== auth()->id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Pastikan booking masih pending atau unpaid
+        if (!in_array($booking->payment_status, ['pending', 'unpaid'])) {
+            return response()->json(['error' => 'Booking sudah dibayar atau tidak valid'], 400);
+        }
+
+        // Cek apakah booking sudah expired (lebih dari 1 jam)
+        if ($booking->expires_at && now()->greaterThan($booking->expires_at)) {
+            return response()->json(['error' => 'Waktu pembayaran sudah habis. Silakan buat pesanan baru.'], 400);
+        }
+
+        try {
+            // Generate snap token baru
+            $package = $booking->package;
+            $snapToken = $this->createSnapToken($booking, $package);
+            
+            return response()->json([
+                'success' => true,
+                'snap_token' => $snapToken
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Gagal membuat token pembayaran: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

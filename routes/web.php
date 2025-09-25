@@ -84,6 +84,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // User booking tracking
+    Route::get('/my-bookings', [BookingController::class, 'userBookings'])->name('user.bookings');
+    Route::post('/booking/{booking}/regenerate-token', [BookingController::class, 'regenerateSnapToken'])
+        ->name('booking.regenerate-token');
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {

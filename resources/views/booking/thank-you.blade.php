@@ -4,7 +4,7 @@
   <div class="container">
     <div class="row justify-content-center">
       <div class="col-lg-8">
-        <div class="text-center mb-5">
+        <!-- <div class="text-center mb-5">
           <div class="mb-4">
             <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="10" fill="#28a745"/>
@@ -13,7 +13,7 @@
           </div>
           <h1 class="h2 text-success mb-3">Terima Kasih!</h1>
           <p class="lead text-muted">Pembayaran Anda telah berhasil diproses</p>
-        </div>
+        </div> -->
 
         <div class="card shadow-sm">
           <div class="card-header bg-light">

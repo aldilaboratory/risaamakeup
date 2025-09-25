@@ -28,8 +28,12 @@
           </a>
         @endguest
 
-        @auth
-          <!-- Logged in: ikon profil + dropdown -->
+        @auth 
+          <!-- Logged in: tombol pesanan + ikon profil + dropdown -->
+          <a href="{{ route('user.bookings') }}" class="btn btn-outline-primary btn-sm me-2">
+            <i class="fas fa-list-alt me-1"></i>Pesanan Saya
+          </a>
+          
           <div class="dropdown">
             <a
               href="#"
@@ -44,9 +48,6 @@
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
               <li>
                 <a class="dropdown-item" href="{{ route('profile.edit') }}">Profile</a>
-              </li>
-              <li>
-                <a class="dropdown-item" href="#">Pesanan</a>
               </li>
               <li><hr class="dropdown-divider"></li>
               <li>
