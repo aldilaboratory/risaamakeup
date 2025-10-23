@@ -3,16 +3,6 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h4>Pesanan Booking</h4>
-  <div class="d-flex gap-2">
-    <select class="form-select" id="statusFilter" style="width: auto;">
-      <option value="">Semua Status</option>
-      <option value="pending">Pending</option>
-      <option value="approved">Disetujui</option>
-      <option value="rejected">Ditolak</option>
-      <option value="completed">Selesai</option>
-      <option value="cancelled">Dibatalkan</option>
-    </select>
-  </div>
 </div>
 
 @if(session('success'))

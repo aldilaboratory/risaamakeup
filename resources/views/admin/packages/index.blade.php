@@ -37,7 +37,9 @@
               {{ $p->title }}<br>
             </td>
             <td>{{ $p->category?->name ?? '-' }}</td>
-            <td>{{ $p->description ?? '-' }}</td>
+            <td class="text-wrap" style="max-width: 350px;">
+              {{ $p->description ?? '-' }}
+            </td>
             <td>Rp {{ number_format($p->price, 0, ',', '.') }}</td>
             <td>
               <span class="badge {{ $p->status === 'active' ? 'bg-success' : 'bg-secondary' }}">

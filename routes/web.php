@@ -1,10 +1,12 @@
 <?php
 
 
+use App\Http\Controllers\Admin\AdminAdminController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminPackageController;
 use App\Http\Controllers\Admin\AdminOrderController;
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PackageController;
@@ -18,19 +20,15 @@ Route::get('/', function () {
         return redirect()->route('admin.dashboard');
     }
 
-    $order = ['akad','wedding','prewedding','engagement'];
-
-    $categories = Category::whereIn('slug', $order)
-        ->with(['packages' => function ($q) {
+    $categories = \App\Models\Category::with(['packages' => function ($q) {
             $q->where('status', 'active')
-              ->latest()
-              ->take(3);
+              ->orderBy('price', 'asc');
+            //   ->take(3); // opsional
         }])
-        ->get()
-        ->sortBy(fn($c) => array_search($c->slug, $order))
-        ->values();
+        ->orderBy('name')   // atau 'id', bebas
+        ->get();
 
-    return view('welcome', compact('categories','order'));
+    return view('welcome', compact('categories'));
 });
 
 Route::scopeBindings()->group(function () {
@@ -96,6 +94,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::resource('categories', AdminCategoryController::class)->except('show');
     Route::resource('packages', AdminPackageController::class)->except('show');
+    Route::resource('users', AdminUserController::class)->only(['index','show']);
+    Route::resource('admins', AdminAdminController::class)->except('show');
     
     // Orders routes
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');

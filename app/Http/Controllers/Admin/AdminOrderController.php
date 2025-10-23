@@ -25,35 +25,35 @@ class AdminOrderController extends Controller
 
     public function approve(Booking $booking)
     {
-        $booking->update([
-            'status' => 'confirmed'
-        ]);
+        $booking->update(['status' => 'confirmed']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Booking berhasil disetujui!',
-            'status' => 'confirmed'
-        ]);
+        if (request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'status'  => 'approved',
+                'message' => 'Booking disetujui.',
+            ]);
+        }
+
+        return back()->with('success', 'Booking disetujui.');   
     }
 
     public function reject(Request $request, Booking $booking)
     {
-        $request->validate([
-            'rejection_reason' => 'nullable|string|max:500'
-        ]);
-
         $booking->update([
             'status' => 'canceled',
-            'notes' => $request->rejection_reason ? 
-                ($booking->notes ? $booking->notes . "\n\nAlasan penolakan: " . $request->rejection_reason : "Alasan penolakan: " . $request->rejection_reason) : 
-                $booking->notes
+            'rejection_reason' => $request->input('rejection_reason'),
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Booking berhasil ditolak!',
-            'status' => 'canceled'
-        ]);
+        if (request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'status'  => 'canceled',
+                'message' => 'Booking ditolak.',
+            ]);
+        }
+
+        return back()->with('success', 'Booking ditolak.');
     }
 
     public function updateStatus(Request $request, Booking $booking)

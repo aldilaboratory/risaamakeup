@@ -1,6 +1,11 @@
+@php
+  $onHome = request()->is('/'); // true kalau lagi di halaman "/"
+  $home   = url('/');           // base URL homepage
+@endphp
+
 <nav class="navbar navbar-expand-lg fixed-top">
   <div class="container">
-    <a class="navbar-brand" href="#home">Risaa Makeup</a>
+    <a class="navbar-brand" href="{{ $home }}">Risaa Makeup</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
@@ -8,10 +13,18 @@
 
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav mx-auto">
-        <li class="nav-item"><a class="nav-link" href="#home">Beranda</a></li>
-        <li class="nav-item"><a class="nav-link" href="#services">Layanan</a></li>
-        <li class="nav-item"><a class="nav-link" href="#pricing">Package</a></li>
-        <li class="nav-item"><a class="nav-link" href="#gallery">Galeri</a></li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ $onHome ? '#home' : $home.'#home' }}">Beranda</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ $onHome ? '#services' : $home.'#services' }}">Layanan</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ $onHome ? '#pricing' : $home.'#pricing' }}">Package</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ $onHome ? '#gallery' : $home.'#gallery' }}">Galeri</a>
+        </li>
       </ul>
 
       <div class="navbar-actions d-flex align-items-center gap-2">

@@ -96,7 +96,7 @@
     </section> --}}
 
     <!-- Pricing Section -->
-    @include('packages.index', ['categories' => $categories, 'order' => $order])
+    @include('packages.index', ['categories' => $categories])
 
     <!-- Gallery Section -->
     <section id="gallery" class="py-5 bg-light">
@@ -105,32 +105,32 @@
             <div class="row g-4">
                 <div class="col-lg-4 col-md-6">
                     <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1971&q=80" alt="Bridal Makeup">
+                        <img src="{{ asset('images/galeri1.jpg') }}" alt="Bridal Makeup">
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-6">
                     <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80" alt="Evening Makeup">
+                        <img src="{{ asset('images/galeri2.jpg') }}" alt="Evening Makeup">
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-6">
                     <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1926&q=80" alt="Natural Look">
+                        <img src="{{ asset('images/galeri3.jpg') }}" alt="Natural Look">
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-6">
                     <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Glamour Makeup">
+                        <img src="{{ asset('images/galeri4.jpg') }}" alt="Glamour Makeup">
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-6">
                     <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1594736797933-d0401ba2fe65?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80" alt="Special Event">
+                        <img src="{{ asset('images/galeri5.jpg') }}" alt="Special Event">
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-6">
                     <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Professional Makeup">
+                        <img src="{{ asset('images/galeri6.jpg') }}" alt="Professional Makeup">
                     </div>
                 </div>
             </div>

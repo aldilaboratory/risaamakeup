@@ -11,28 +11,24 @@ class PackageController extends Controller
     // Halaman list publik (tabs)
     public function indexPublic()
     {
-        $order = ['akad','wedding','prewedding','engagement'];
-
-        $categories = Category::whereIn('slug', $order)
-            ->with(['packages' => function ($q) {
+        // Ambil semua kategori + paket aktif, urut paket dari termurah
+        $categories = Category::with([
+            'packages' => function ($q) {
                 $q->where('status', 'active')
-                ->orderBy('price', 'asc') // <= urutkan termurah dulu
-                ->take(3);                // <= jika ingin hanya 3 paket per kategori
-            }])
-            ->get()
-            ->sortBy(fn($c) => array_search($c->slug, $order))
-            ->values();
+                  ->orderBy('price', 'asc');
+                //   ->take(3); // opsional: kalau mau batasi 3 per kategori
+            }
+        ])
+        ->orderBy('name') // atau 'id' sesuai kebutuhan
+        ->get();
 
-        return view('packages.index', compact('categories', 'order'));
+        return view('packages.index', compact('categories'));
     }
 
-    // Detail publik
     public function showPublic(Category $category, Package $package)
     {
-        // berkat scopeBindings, $package pasti milik $category
         return view('packages.show', compact('category','package'));
     }
-
     /**
      * Display a listing of the resource.
      */

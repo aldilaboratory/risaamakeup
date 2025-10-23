@@ -26,13 +26,13 @@
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#">
+              <a class="nav-link" href="{{ route('admin.users.index') }}">
                 <i class="menu-icon mdi mdi-account-circle-outline"></i>
                 <span class="menu-title">Data User</span>
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#">
+              <a class="nav-link" href="{{ route('admin.admins.index') }}">
                 <i class="menu-icon mdi mdi-account-circle-outline"></i>
                 <span class="menu-title">Data Admin</span>
               </a>
