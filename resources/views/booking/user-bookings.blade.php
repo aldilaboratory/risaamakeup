@@ -21,7 +21,7 @@
                         <div class="col-md-6 mb-4">
                             <div class="card shadow-sm h-100">
                                 <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0 fw-bold">{{ $booking->package->name }}</h6>
+                                    <h6 class="mb-0 fw-bold">{{ $booking->package->title }}</h6>
                                     <span class="badge 
                                         @if($booking->payment_status === 'paid') bg-success
                                         @elseif($booking->payment_status === 'pending') bg-warning
@@ -62,13 +62,17 @@
                                     </div>
 
                                     <div class="row mb-3">
-                                        <div class="col-sm-6">
+                                        <div class="col-sm-4">
                                             <small class="text-muted">Nama:</small>
                                             <div class="fw-semibold">{{ $booking->name }}</div>
                                         </div>
-                                        <div class="col-sm-6">
+                                        <div class="col-sm-4">
                                             <small class="text-muted">Telepon:</small>
                                             <div class="fw-semibold">{{ $booking->phone }}</div>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <small class="text-muted">Booking ID:</small>
+                                            <div class="fw-semibold">#{{ $booking->id }}</div>
                                         </div>
                                     </div>
 
@@ -85,8 +89,9 @@
                                             <div class="h5 text-primary mb-0">Rp {{ number_format($booking->pay_now, 0, ',', '.') }}</div>
                                         </div>
                                         <div class="text-end">
-                                            <small class="text-muted">Booking ID:</small>
-                                            <div class="fw-semibold">#{{ $booking->id }}</div>
+                                            @if($booking->payment_status === 'paid')
+                                                <a href="{{ route('booking.invoice', $booking) }}" class="btn btn-sm btn-outline-primary mt-2" target="_blank">Invoice</a>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>

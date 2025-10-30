@@ -32,24 +32,27 @@ Route::get('/', function () {
 });
 
 Route::scopeBindings()->group(function () {
-// penting: letakkan ini dulu
-Route::get('/booking/{booking}/pay', [BookingController::class,'payPage'])
-    ->whereNumber('booking')
-    ->middleware('auth')
-    ->name('booking.pay.page');
+    // penting: letakkan ini dulu
+    Route::get('/booking/{booking}/pay', [BookingController::class,'payPage'])
+        ->whereNumber('booking')
+        ->middleware('auth')
+        ->name('booking.pay.page');
 
-Route::get('/booking/{booking}/thank-you', [BookingController::class,'thankYou'])
-    ->whereNumber('booking')
-    ->middleware('auth')
-    ->name('booking.thank-you');
+    Route::get('/booking/{booking}/invoice', [BookingController::class,'invoice'])
+        ->whereNumber('booking')->middleware('auth')->name('booking.invoice');
 
-// baru setelah itu rute 2 segmen (category/package)
-Route::get('/booking/{category:slug}/{package:slug}', [BookingController::class, 'create'])
-    ->middleware('auth')
-    ->name('booking.create');
-Route::post('/booking/{category:slug}/{package:slug}', [BookingController::class, 'store'])
-    ->middleware('auth')
-    ->name('booking.store');
+    Route::get('/booking/{booking}/thank-you', [BookingController::class,'thankYou'])
+        ->whereNumber('booking')
+        ->middleware('auth')
+        ->name('booking.thank-you');
+
+    // baru setelah itu rute 2 segmen (category/package)
+    Route::get('/booking/{category:slug}/{package:slug}', [BookingController::class, 'create'])
+        ->middleware('auth')
+        ->name('booking.create');
+    Route::post('/booking/{category:slug}/{package:slug}', [BookingController::class, 'store'])
+        ->middleware('auth')
+        ->name('booking.store');
 
     // Midtrans server → kita (webhook)
     Route::post('/midtrans/notification', [BookingController::class,'notificationHandler'])
@@ -87,22 +90,28 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-bookings', [BookingController::class, 'userBookings'])->name('user.bookings');
     Route::post('/booking/{booking}/regenerate-token', [BookingController::class, 'regenerateSnapToken'])
         ->name('booking.regenerate-token');
+
+    Route::get('/booking/{booking}/invoice', [BookingController::class, 'invoice'])
+        ->name('booking.invoice');
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', fn () => redirect()->route('admin.dashboard'));
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    Route::resource('categories', AdminCategoryController::class)->except('show');
-    Route::resource('packages', AdminPackageController::class)->except('show');
-    Route::resource('users', AdminUserController::class)->only(['index','show']);
-    Route::resource('admins', AdminAdminController::class)->except('show');
-    
-    // Orders routes
-    Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
-    Route::get('/orders/{booking}', [AdminOrderController::class, 'show'])->name('orders.show');
-    Route::patch('/orders/{booking}/approve', [AdminOrderController::class, 'approve'])->name('orders.approve');
-    Route::patch('/orders/{booking}/reject', [AdminOrderController::class, 'reject'])->name('orders.reject');
-    Route::patch('/orders/{booking}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
+
+    Route::resource('categories', \App\Http\Controllers\Admin\AdminCategoryController::class)->except('show');
+    Route::resource('packages', \App\Http\Controllers\Admin\AdminPackageController::class)->except('show');
+    Route::resource('users', \App\Http\Controllers\Admin\AdminUserController::class)->only(['index','show']);
+    Route::resource('admins', \App\Http\Controllers\Admin\AdminAdminController::class)->except('show');
+
+    // Orders
+    Route::get('/orders', [\App\Http\Controllers\Admin\AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{booking}', [\App\Http\Controllers\Admin\AdminOrderController::class, 'show'])->name('orders.show');
+
+    // AJAX actions
+    Route::patch('/orders/{booking}/approve', [\App\Http\Controllers\Admin\AdminOrderController::class, 'approve'])->name('orders.approve');
+    Route::patch('/orders/{booking}/reject', [\App\Http\Controllers\Admin\AdminOrderController::class, 'reject'])->name('orders.reject');
+    Route::patch('/orders/{booking}/status', [\App\Http\Controllers\Admin\AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
 });
 
 require __DIR__.'/auth.php';

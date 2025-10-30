@@ -8,26 +8,32 @@ use Illuminate\Http\Request;
 
 class AdminOrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $bookings = Booking::with(['package', 'category'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        $q = Booking::with(['package','category'])
+            ->latest();
+
+        if ($request->filled('status')) {
+            $q->where('status', $request->string('status'));
+        }
+
+        $bookings = $q->paginate(15);
 
         return view('admin.orders.index', compact('bookings'));
     }
 
     public function show(Booking $booking)
     {
-        $booking->load(['package', 'category']);
+        $booking->load(['package','category']);
         return view('admin.orders.show', compact('booking'));
     }
 
-    public function approve(Booking $booking)
+    public function approve(Request $request, Booking $booking)
     {
-        $booking->update(['status' => 'confirmed']);
+        // Gunakan enum yang sesuai di DB Anda. Misal sudah: pending/approved/rejected/completed/cancelled
+        $booking->update(['status' => 'approved']);
 
-        if (request()->wantsJson()) {
+        if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'status'  => 'approved',
@@ -35,20 +41,26 @@ class AdminOrderController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Booking disetujui.');   
+        return back()->with('success', 'Booking disetujui.');
     }
 
     public function reject(Request $request, Booking $booking)
     {
-        $booking->update([
-            'status' => 'canceled',
-            'rejection_reason' => $request->input('rejection_reason'),
-        ]);
+        // Simpan alasan jika ada (pastikan kolomnya ada, jika tidak hapus baris ini)
+        if ($request->filled('rejection_reason')) {
+            $booking->rejection_reason = $request->string('rejection_reason');
+        }
 
-        if (request()->wantsJson()) {
+        // Sesuaikan dengan enum status di DB Anda: 'rejected' (baru) atau 'canceled' (lama)
+        $newStatus = $this->supportsNewEnum() ? 'rejected' : 'canceled';
+
+        $booking->status = $newStatus;
+        $booking->save();
+
+        if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'status'  => 'canceled',
+                'status'  => $newStatus,
                 'message' => 'Booking ditolak.',
             ]);
         }
@@ -59,17 +71,43 @@ class AdminOrderController extends Controller
     public function updateStatus(Request $request, Booking $booking)
     {
         $request->validate([
-            'status' => 'required|in:pending,confirmed,canceled,done'
+            'status' => 'required|string',
         ]);
 
-        $booking->update([
-            'status' => $request->status
-        ]);
+        $status = $request->string('status');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Status booking berhasil diupdate!',
-            'status' => $request->status
-        ]);
+        // Validasi status sederhana; bisa Anda perketat sesuai enum Anda
+        $allowedNew = ['pending','approved','rejected','completed','cancelled'];
+        $allowedOld = ['pending','confirmed','canceled','done'];
+
+        if (! in_array($status, array_merge($allowedNew, $allowedOld), true)) {
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => 'Status tidak valid'], 422)
+                : back()->with('error', 'Status tidak valid');
+        }
+
+        $booking->update(['status' => $status]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'status'  => $status,
+                'message' => 'Status berhasil diupdate.',
+            ]);
+        }
+
+        return back()->with('success', 'Status berhasil diupdate.');
+    }
+
+    /**
+     * Deteksi enum versi baru (approved/rejected/completed/cancelled) atau lama (confirmed/canceled/done).
+     * Sederhana: jika ada data dengan 'approved', anggap enum baru.
+     */
+    protected function supportsNewEnum(): bool
+    {
+        return Booking::where('status', 'approved')->exists()
+            || Booking::where('status', 'rejected')->exists()
+            || Booking::where('status', 'completed')->exists()
+            || Booking::where('status', 'cancelled')->exists();
     }
 }

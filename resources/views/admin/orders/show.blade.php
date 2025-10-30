@@ -286,50 +286,6 @@
 @endsection
 
 @section('scripts')
-<script>
-function approveBooking(bookingId) {
-  const form = document.getElementById('approveForm');
-  form.action = `/admin/orders/${bookingId}/approve`;
-  new bootstrap.Modal(document.getElementById('approveModal')).show();
-}
-
-function rejectBooking(bookingId) {
-  const form = document.getElementById('rejectForm');
-  form.action = `/admin/orders/${bookingId}/reject`;
-  new bootstrap.Modal(document.getElementById('rejectModal')).show();
-}
-
-function updateStatus() {
-  const status = document.getElementById('statusSelect').value;
-  if (!status) return;
-  
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = `/admin/orders/{{ $booking->id }}/status`;
-  
-  const csrfToken = document.createElement('input');
-  csrfToken.type = 'hidden';
-  csrfToken.name = '_token';
-  csrfToken.value = '{{ csrf_token() }}';
-  
-  const methodField = document.createElement('input');
-  methodField.type = 'hidden';
-  methodField.name = '_method';
-  methodField.value = 'PATCH';
-  
-  const statusField = document.createElement('input');
-  statusField.type = 'hidden';
-  statusField.name = 'status';
-  statusField.value = status;
-  
-  form.appendChild(csrfToken);
-  form.appendChild(methodField);
-  form.appendChild(statusField);
-  
-  document.body.appendChild(form);
-  form.submit();
-}
-</script>
 
 <style>
 .timeline {
@@ -376,85 +332,67 @@ function updateStatus() {
 <script>
 function approveBooking(bookingId) {
   const form = document.getElementById('approveForm');
-  form.action = `/admin/orders/${bookingId}/approve`;
+  form.onsubmit = async function(e) {
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    const txt = btn.textContent; btn.disabled = true; btn.textContent='Memproses...';
+    const fd = new FormData(); fd.append('_method','PATCH');
+    try {
+      const data = await fetch(`/admin/orders/${bookingId}/approve`, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: fd
+      }).then(r => r.json());
+      if (data.success) location.reload(); else alert('Gagal menyetujui');
+    } catch(e){ alert('Gagal menyetujui'); } finally { btn.disabled=false; btn.textContent=txt; }
+  };
   new bootstrap.Modal(document.getElementById('approveModal')).show();
 }
 
 function rejectBooking(bookingId) {
   const form = document.getElementById('rejectForm');
-  form.action = `/admin/orders/${bookingId}/reject`;
+  form.onsubmit = async function(e) {
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    const txt = btn.textContent; btn.disabled = true; btn.textContent='Memproses...';
+    const fd = new FormData(form); fd.append('_method','PATCH');
+    try {
+      const data = await fetch(`/admin/orders/${bookingId}/reject`, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: fd
+      }).then(r => r.json());
+      if (data.success) location.reload(); else alert('Gagal menolak');
+    } catch(e){ alert('Gagal menolak'); } finally { btn.disabled=false; btn.textContent=txt; }
+  };
   new bootstrap.Modal(document.getElementById('rejectModal')).show();
 }
 
-// === AJAX submit: APPROVE ===
-document.getElementById('approveForm').addEventListener('submit', async function (e) {
-  e.preventDefault(); // <— cegah pindah halaman
-
-  const btn   = this.querySelector('button[type="submit"]');
-  const label = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Memproses…';
-
-  try {
-    const res  = await fetch(this.action, {
-      method: 'POST',
-      headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept':'application/json'},
-      body: new FormData(this) // sudah ada _method=PATCH dari @method('PATCH')
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      // update badge status di halaman
-      const badge = document.querySelector('.badge.bg-{{ $statusColors[$booking->status] ?? "secondary" }}');
-      if (badge) {
-        badge.className = 'badge bg-success fs-6';
-        badge.textContent = 'Disetujui';
-      }
-      bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
-    } else {
-      alert(data.message ?? 'Gagal menyetujui booking.');
-    }
-  } catch (err) {
-    console.error(err);
-    alert('Terjadi kesalahan jaringan.');
-  } finally {
-    btn.disabled = false; btn.textContent = label;
-  }
-});
-
-// === AJAX submit: REJECT ===
-document.getElementById('rejectForm').addEventListener('submit', async function (e) {
-  e.preventDefault();
-
-  const btn   = this.querySelector('button[type="submit"]');
-  const label = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Memproses…';
-
-  try {
-    const res  = await fetch(this.action, {
-      method: 'POST',
-      headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept':'application/json'},
-      body: new FormData(this) // sudah ada _method=PATCH
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      const badge = document.querySelector('.badge.fs-6');
-      if (badge) {
-        badge.className = 'badge bg-danger fs-6';
-        badge.textContent = 'Ditolak';
-      }
-      bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
-      this.reset();
-    } else {
-      alert(data.message ?? 'Gagal menolak booking.');
-    }
-  } catch (err) {
-    console.error(err);
-    alert('Terjadi kesalahan jaringan.');
-  } finally {
-    btn.disabled = false; btn.textContent = label;
-  }
-});
+function updateStatus() {
+  const status = document.getElementById('statusSelect').value;
+  if (!status) return;
+  const fd = new FormData(); fd.append('_method','PATCH'); fd.append('status', status);
+  fetch(`/admin/orders/{{ $booking->id }}/status`, {
+    method: 'POST',
+    headers: {
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+      'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: fd
+  }).then(r => r.json()).then(d => {
+    if (d.success) location.reload(); else alert('Gagal update status');
+  }).catch(()=>alert('Gagal update status'));
+}
 </script>
+
 
 @endsection

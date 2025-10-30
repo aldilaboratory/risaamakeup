@@ -57,17 +57,31 @@
             </td>
             <td>
               @php
+                // Kedua versi enum didukung
                 $statusColors = [
-                  'pending' => 'warning',
-                  'confirmed' => 'success', 
-                  'canceled' => 'danger',
-                  'done' => 'primary'
+                  // enum baru
+                  'pending'   => 'warning',
+                  'approved'  => 'success',
+                  'rejected'  => 'danger',
+                  'completed' => 'primary',
+                  'cancelled' => 'secondary',
+                  // enum lama
+                  'confirmed' => 'success',
+                  'canceled'  => 'danger',
+                  'done'      => 'primary',
                 ];
+
                 $statusLabels = [
-                  'pending' => 'Pending',
+                  // enum baru
+                  'pending'   => 'Menunggu',
+                  'approved'  => 'Disetujui',
+                  'rejected'  => 'Ditolak',
+                  'completed' => 'Selesai',
+                  'cancelled' => 'Dibatalkan',
+                  // enum lama
                   'confirmed' => 'Disetujui',
-                  'canceled' => 'Ditolak', 
-                  'done' => 'Selesai'
+                  'canceled'  => 'Ditolak',
+                  'done'      => 'Selesai',
                 ];
               @endphp
               <span class="badge status-badge bg-{{ $statusColors[$booking->status] ?? 'secondary' }}">
@@ -204,183 +218,152 @@ function rejectBooking(bookingId) {
   new bootstrap.Modal(document.getElementById('rejectModal')).show();
 }
 
-// Handle approve form submission
-document.getElementById('approveForm').addEventListener('submit', function(e) {
+// helper: fetch JSON aman (antisipasi redirect/html)
+async function fetchJsonSafe(url, options={}) {
+  const res = await fetch(url, options);
+  const ct = res.headers.get('content-type') || '';
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  if (ct.includes('application/json')) return res.json();
+  // fallback jika server mengirim HTML (mis. redirect)
+  return { success: true };
+}
+
+// APPROVE
+document.getElementById('approveForm').addEventListener('submit', async function(e) {
   e.preventDefault();
-  
   if (!currentBookingId) return;
-  
+
   const submitBtn = this.querySelector('button[type="submit"]');
   const originalText = submitBtn.textContent;
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Memproses...';
-  
+  submitBtn.disabled = true; submitBtn.textContent = 'Memproses...';
+
   const formData = new FormData();
   formData.append('_method', 'PATCH');
-  
-  fetch(`/admin/orders/${currentBookingId}/approve`, {
-    method: 'POST',
-    headers: {
-      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-    },
-    body: formData
-  })
-  .then(response => response.json())
-  .then(data => {
+
+  try {
+    const data = await fetchJsonSafe(`/admin/orders/${currentBookingId}/approve`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: formData
+    });
+
     if (data.success) {
-      // Update status badge in table
-      updateStatusBadge(currentBookingId, data.status);
-      // Hide action buttons for this row
+      // enum baru: 'approved' | lama: 'confirmed'
+      updateStatusBadge(currentBookingId, data.status || 'approved');
       hideActionButtons(currentBookingId);
-      // Show success message
-      showAlert('success', data.message);
-      // Hide modal
+      showAlert('success', data.message || 'Booking disetujui.');
       bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
     } else {
       showAlert('danger', 'Terjadi kesalahan saat menyetujui booking');
     }
-  })
-  .catch(error => {
-    console.error('Error:', error);
+  } catch (err) {
+    console.error(err);
     showAlert('danger', 'Terjadi kesalahan saat menyetujui booking');
-  })
-  .finally(() => {
-    submitBtn.disabled = false;
-    submitBtn.textContent = originalText;
-  });
+  } finally {
+    submitBtn.disabled = false; submitBtn.textContent = originalText;
+  }
 });
 
-// Handle reject form submission
-document.getElementById('rejectForm').addEventListener('submit', function(e) {
+// REJECT
+document.getElementById('rejectForm').addEventListener('submit', async function(e) {
   e.preventDefault();
-  
   if (!currentBookingId) return;
-  
+
   const submitBtn = this.querySelector('button[type="submit"]');
   const originalText = submitBtn.textContent;
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Memproses...';
-  
+  submitBtn.disabled = true; submitBtn.textContent = 'Memproses...';
+
   const formData = new FormData(this);
   formData.append('_method', 'PATCH');
-  
-  fetch(`/admin/orders/${currentBookingId}/reject`, {
-    method: 'POST',
-    headers: {
-      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-    },
-    body: formData
-  })
-  .then(response => response.json())
-  .then(data => {
+
+  try {
+    const data = await fetchJsonSafe(`/admin/orders/${currentBookingId}/reject`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: formData
+    });
+
     if (data.success) {
-      // Update status badge in table
-      updateStatusBadge(currentBookingId, data.status);
-      // Hide action buttons for this row
+      // enum baru: 'rejected' | lama: 'canceled'
+      updateStatusBadge(currentBookingId, data.status || 'rejected');
       hideActionButtons(currentBookingId);
-      // Show success message
-      showAlert('success', data.message);
-      // Hide modal
+      showAlert('success', data.message || 'Booking ditolak.');
       bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
-      // Clear form
       this.reset();
     } else {
       showAlert('danger', 'Terjadi kesalahan saat menolak booking');
     }
-  })
-  .catch(error => {
-    console.error('Error:', error);
+  } catch (err) {
+    console.error(err);
     showAlert('danger', 'Terjadi kesalahan saat menolak booking');
-  })
-  .finally(() => {
-    submitBtn.disabled = false;
-    submitBtn.textContent = originalText;
-  });
+  } finally {
+    submitBtn.disabled = false; submitBtn.textContent = originalText;
+  }
 });
 
+// Update badge status di baris tabel
 function updateStatusBadge(bookingId, status) {
   const row = document.querySelector(`tr[data-booking-id="${bookingId}"]`);
-  if (row) {
-    const statusBadge = row.querySelector('.status-badge');
-    if (statusBadge) {
-      // Remove old classes
-      statusBadge.classList.remove('bg-warning', 'bg-success', 'bg-danger', 'bg-primary');
-      
-      // Add new class and text based on status
-      switch(status) {
-        case 'pending':
-          statusBadge.classList.add('bg-warning');
-          statusBadge.textContent = 'Pending';
-          break;
-        case 'confirmed':
-          statusBadge.classList.add('bg-success');
-          statusBadge.textContent = 'Disetujui';
-          break;
-        case 'canceled':
-          statusBadge.classList.add('bg-danger');
-          statusBadge.textContent = 'Ditolak';
-          break;
-        case 'done':
-          statusBadge.classList.add('bg-primary');
-          statusBadge.textContent = 'Selesai';
-          break;
-      }
-    }
+  if (!row) return;
+
+  const badge = row.querySelector('.status-badge');
+  if (!badge) return;
+
+  // normalisasi status agar kompatibel 2 enum
+  const mapToNew = { confirmed: 'approved', canceled: 'rejected', done: 'completed' };
+  const normalized = mapToNew[status] || status;
+
+  // reset kelas
+  badge.classList.remove('bg-warning','bg-success','bg-danger','bg-primary','bg-secondary');
+
+  switch (normalized) {
+    case 'pending':   badge.classList.add('bg-warning');  badge.textContent = 'Menunggu'; break;
+    case 'approved':  badge.classList.add('bg-success');  badge.textContent = 'Disetujui'; break;
+    case 'rejected':  badge.classList.add('bg-danger');   badge.textContent = 'Ditolak'; break;
+    case 'completed': badge.classList.add('bg-primary');  badge.textContent = 'Selesai'; break;
+    case 'cancelled': badge.classList.add('bg-secondary');badge.textContent = 'Dibatalkan'; break;
+    default:          badge.classList.add('bg-secondary');badge.textContent = normalized;  break;
   }
 }
 
 function hideActionButtons(bookingId) {
   const row = document.querySelector(`tr[data-booking-id="${bookingId}"]`);
-  if (row) {
-    const actionButtons = row.querySelector('.action-buttons');
-    if (actionButtons) {
-      actionButtons.innerHTML = '<span class="text-muted">-</span>';
-    }
-  }
+  if (!row) return;
+  const group = row.querySelector('.action-buttons');
+  if (group) group.innerHTML = '<span class="text-muted">-</span>';
 }
 
+// alert helper
 function showAlert(type, message) {
-  // Remove existing alerts
-  const existingAlerts = document.querySelectorAll('.alert-auto-dismiss');
-  existingAlerts.forEach(alert => alert.remove());
-  
-  // Create new alert
-  const alertDiv = document.createElement('div');
-  alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-auto-dismiss`;
-  alertDiv.innerHTML = `
-    ${message}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-  `;
-  
-  // Insert at top of content
-  const contentWrapper = document.querySelector('.content-wrapper');
-  contentWrapper.insertBefore(alertDiv, contentWrapper.firstChild);
-  
-  // Auto dismiss after 5 seconds
-  setTimeout(() => {
-    if (alertDiv.parentNode) {
-      alertDiv.remove();
-    }
-  }, 5000);
+  document.querySelectorAll('.alert-auto-dismiss')?.forEach(el => el.remove());
+  const div = document.createElement('div');
+  div.className = `alert alert-${type} alert-dismissible fade show alert-auto-dismiss`;
+  div.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+  const contentWrapper = document.querySelector('.content-wrapper') || document.body;
+  contentWrapper.insertBefore(div, contentWrapper.firstChild);
+  setTimeout(() => div.remove(), 5000);
 }
 
-// Filter by status
-document.getElementById('statusFilter').addEventListener('change', function() {
-  const status = this.value;
-  const url = new URL(window.location);
-  if (status) {
-    url.searchParams.set('status', status);
-  } else {
-    url.searchParams.delete('status');
-  }
-  window.location = url;
-});
-
-// Set current filter value
-const urlParams = new URLSearchParams(window.location.search);
-const currentStatus = urlParams.get('status');
-if (currentStatus) {
-  document.getElementById('statusFilter').value = currentStatus;
+// (opsional) filter status
+const statusFilter = document.getElementById('statusFilter');
+if (statusFilter) {
+  statusFilter.addEventListener('change', function() {
+    const url = new URL(window.location);
+    this.value ? url.searchParams.set('status', this.value) : url.searchParams.delete('status');
+    window.location = url;
+  });
+  const urlParams = new URLSearchParams(window.location.search);
+  const currentStatus = urlParams.get('status');
+  if (currentStatus) statusFilter.value = currentStatus;
 }
 </script>
+
 @endsection

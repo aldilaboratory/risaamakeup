@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Package;
 use App\Models\Booking;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Midtrans\Config as MidConfig;
 use Midtrans\Snap as MidSnap;
@@ -325,5 +327,33 @@ class BookingController extends Controller
                 'error' => 'Gagal membuat token pembayaran: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function invoice(Booking $booking)
+    {
+        // Otorisasi sederhana: pemilik booking atau admin
+        if (method_exists($booking, 'user_id') && $booking->user_id) {
+            if (Auth::id() !== (int) $booking->user_id && Auth::user()?->role !== 'admin') {
+                abort(403);
+            }
+        } else {
+            // Kalau tidak ada user_id di tabel, minimal pakai login check
+            if (!Auth::check()) abort(403);
+        }
+
+        // (Opsional) jika mau batasi hanya yang sudah bayar:
+        // if ($booking->payment_status !== 'paid') abort(403, 'Invoice tersedia setelah pembayaran.');
+
+        $booking->load(['package','category']); // pastikan relasi siap
+
+        $pdf = Pdf::loadView('booking.invoice', [
+            'booking' => $booking,
+        ])->setPaper('a4');
+
+        $fileName = 'Invoice-RisaaMakeup-#'.$booking->id.'.pdf';
+
+        // download() untuk unduh langsung, stream() kalau mau buka di tab
+        return $pdf->stream($fileName);
+        // return $pdf->stream($fileName);
     }
 }
