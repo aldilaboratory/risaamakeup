@@ -92,17 +92,24 @@
               @php
                 $statusColors = [
                   'pending' => 'warning',
-                  'approved' => 'success', 
+                  'approved' => 'success',
                   'rejected' => 'danger',
                   'completed' => 'primary',
-                  'cancelled' => 'secondary'
+                  'cancelled' => 'secondary',
+                  // kompatibel enum lama (jika kebetulan ada)
+                  'confirmed' => 'success',
+                  'canceled'  => 'danger',
+                  'done'      => 'primary',
                 ];
                 $statusLabels = [
                   'pending' => 'Menunggu',
                   'approved' => 'Disetujui',
-                  'rejected' => 'Ditolak', 
+                  'rejected' => 'Ditolak',
                   'completed' => 'Selesai',
-                  'cancelled' => 'Dibatalkan'
+                  'cancelled' => 'Dibatalkan',
+                  'confirmed' => 'Disetujui',
+                  'canceled'  => 'Ditolak',
+                  'done'      => 'Selesai',
                 ];
               @endphp
               <span class="badge bg-{{ $statusColors[$booking->status] ?? 'secondary' }} fs-6">
@@ -142,7 +149,7 @@
           </tr>
           <tr>
             <td class="fw-semibold">Total Bayar:</td>
-            <td class="fw-bold">Rp {{ number_format($booking->pay_now, 0, ',', '.') }}</td>
+            <td class="fw-bold">Rp {{ number_format($booking->subtotal, 0, ',', '.') }}</td>
           </tr>
           @if($booking->midtrans_order_id)
           <tr>
@@ -172,7 +179,7 @@
   </div>
 </div>
 
-<!-- Aksi -->
+{{-- <!-- Aksi -->
 <div class="card">
   <div class="card-header">
     <h5 class="card-title mb-0">Aksi</h5>
@@ -191,13 +198,18 @@
       @endif
       <div class="col-md-6">
         <div class="d-flex gap-2">
+          @php
+            $supportsNew = \App\Models\Booking::whereIn('status',['approved','rejected','completed','cancelled'])->exists();
+            $options = $supportsNew
+              ? ['pending'=>'Menunggu','approved'=>'Disetujui','rejected'=>'Ditolak','completed'=>'Selesai','cancelled'=>'Dibatalkan']
+              : ['pending'=>'Menunggu','confirmed'=>'Disetujui','canceled'=>'Ditolak','done'=>'Selesai'];
+          @endphp
+
           <select class="form-select" id="statusSelect" style="max-width: 200px;">
             <option value="">Ubah Status</option>
-            <option value="pending" {{ $booking->status === 'pending' ? 'selected' : '' }}>Menunggu</option>
-            <option value="approved" {{ $booking->status === 'approved' ? 'selected' : '' }}>Disetujui</option>
-            <option value="rejected" {{ $booking->status === 'rejected' ? 'selected' : '' }}>Ditolak</option>
-            <option value="completed" {{ $booking->status === 'completed' ? 'selected' : '' }}>Selesai</option>
-            <option value="cancelled" {{ $booking->status === 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
+            @foreach($options as $value => $label)
+              <option value="{{ $value }}" {{ $booking->status === $value ? 'selected' : '' }}>{{ $label }}</option>
+            @endforeach
           </select>
           <button type="button" class="btn btn-primary" onclick="updateStatus()">Update</button>
         </div>
@@ -231,7 +243,7 @@
       @endif
     </div>
   </div>
-</div>
+</div> --}}
 
 <!-- Modal Approve -->
 <div class="modal fade" id="approveModal" tabindex="-1">
@@ -288,48 +300,32 @@
 @section('scripts')
 
 <style>
-.timeline {
-  position: relative;
-  padding-left: 30px;
-}
-
-.timeline-item {
-  position: relative;
-  margin-bottom: 20px;
-}
-
-.timeline-marker {
-  position: absolute;
-  left: -35px;
-  top: 5px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
+.timeline { position: relative; padding-left: 30px; }
+.timeline-item { position: relative; margin-bottom: 20px; }
+.timeline-marker { position: absolute; left: -35px; top: 5px; width: 12px; height: 12px; border-radius: 50%; }
 .timeline-item:not(:last-child)::before {
-  content: '';
-  position: absolute;
-  left: -30px;
-  top: 17px;
-  width: 2px;
-  height: calc(100% + 5px);
-  background-color: #dee2e6;
+  content: ''; position: absolute; left: -30px; top: 17px; width: 2px; height: calc(100% + 5px); background-color: #dee2e6;
 }
-
-.timeline-title {
-  margin-bottom: 5px;
-  font-size: 14px;
-}
-
-.timeline-text {
-  margin-bottom: 0;
-  font-size: 13px;
-  color: #6c757d;
-}
+.timeline-title { margin-bottom: 5px; font-size: 14px; }
+.timeline-text { margin-bottom: 0; font-size: 13px; color: #6c757d; }
 </style>
 
 <script>
+// helper aman JSON (kalau server balikin HTML/redirect)
+async function fetchJsonSafe(url, options = {}) {
+  const res = await fetch(url, options);
+  const ok = res.ok;
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) {
+    const data = await res.json();
+    if (!ok) throw new Error(data?.message || 'HTTP ' + res.status);
+    return data;
+  } else {
+    if (!ok) throw new Error('HTTP ' + res.status);
+    return { success: true };
+  }
+}
+
 function approveBooking(bookingId) {
   const form = document.getElementById('approveForm');
   form.onsubmit = async function(e) {
@@ -338,7 +334,7 @@ function approveBooking(bookingId) {
     const txt = btn.textContent; btn.disabled = true; btn.textContent='Memproses...';
     const fd = new FormData(); fd.append('_method','PATCH');
     try {
-      const data = await fetch(`/admin/orders/${bookingId}/approve`, {
+      const data = await fetchJsonSafe(`/admin/orders/${bookingId}/approve`, {
         method: 'POST',
         headers: {
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -346,9 +342,10 @@ function approveBooking(bookingId) {
           'X-Requested-With': 'XMLHttpRequest',
         },
         body: fd
-      }).then(r => r.json());
-      if (data.success) location.reload(); else alert('Gagal menyetujui');
-    } catch(e){ alert('Gagal menyetujui'); } finally { btn.disabled=false; btn.textContent=txt; }
+      });
+      if (data.success) location.reload(); else alert(data.message || 'Gagal menyetujui');
+    } catch(e){ alert('Gagal menyetujui'); }
+    finally { btn.disabled=false; btn.textContent=txt; }
   };
   new bootstrap.Modal(document.getElementById('approveModal')).show();
 }
@@ -361,7 +358,7 @@ function rejectBooking(bookingId) {
     const txt = btn.textContent; btn.disabled = true; btn.textContent='Memproses...';
     const fd = new FormData(form); fd.append('_method','PATCH');
     try {
-      const data = await fetch(`/admin/orders/${bookingId}/reject`, {
+      const data = await fetchJsonSafe(`/admin/orders/${bookingId}/reject`, {
         method: 'POST',
         headers: {
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -369,30 +366,43 @@ function rejectBooking(bookingId) {
           'X-Requested-With': 'XMLHttpRequest',
         },
         body: fd
-      }).then(r => r.json());
-      if (data.success) location.reload(); else alert('Gagal menolak');
-    } catch(e){ alert('Gagal menolak'); } finally { btn.disabled=false; btn.textContent=txt; }
+      });
+      if (data.success) location.reload(); else alert(data.message || 'Gagal menolak');
+    } catch(e){ alert('Gagal menolak'); }
+    finally { btn.disabled=false; btn.textContent=txt; }
   };
   new bootstrap.Modal(document.getElementById('rejectModal')).show();
 }
 
-function updateStatus() {
+async function updateStatus() {
   const status = document.getElementById('statusSelect').value;
   if (!status) return;
-  const fd = new FormData(); fd.append('_method','PATCH'); fd.append('status', status);
-  fetch(`/admin/orders/{{ $booking->id }}/status`, {
-    method: 'POST',
-    headers: {
-      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-      'Accept': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-    body: fd
-  }).then(r => r.json()).then(d => {
-    if (d.success) location.reload(); else alert('Gagal update status');
-  }).catch(()=>alert('Gagal update status'));
+
+  const fd = new FormData();
+  fd.append('_method', 'PATCH');
+  fd.append('status', status);
+
+  try {
+    const data = await fetchJsonSafe(`/admin/orders/{{ $booking->id }}/status`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: fd
+    });
+
+    if (data.success) {
+      location.reload();
+    } else {
+      alert(data.message || 'Gagal update status');
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Gagal update status');
+  }
 }
 </script>
-
 
 @endsection

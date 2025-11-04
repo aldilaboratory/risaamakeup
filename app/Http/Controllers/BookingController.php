@@ -57,10 +57,7 @@ class BookingController extends Controller
             'location'     => $data['location'],
             'event_date'   => $data['event_date'],
             'event_time'   => $data['event_time'],
-            'qty'          => $qty,
-            'dp_percent'   => $dpPercent,
             'subtotal'     => $subtotal,
-            'pay_now'      => $payNow,
             'notes'        => $data['notes'] ?? null,
             'status'       => 'pending',
         ]);
@@ -287,10 +284,9 @@ class BookingController extends Controller
     // User booking tracking page
     public function userBookings()
     {
-        $bookings = Booking::where('user_id', auth()->id())
-            ->with(['package', 'category'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $bookings = \App\Models\Booking::with(['package','category','testimonial'])
+        ->where('user_id', auth()->id())
+        ->latest()->get();
 
         return view('booking.user-bookings', compact('bookings'));
     }

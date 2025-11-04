@@ -62,7 +62,7 @@
                 <hr>
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <strong>Total Pembayaran:</strong>
-                  <span class="h5 text-success mb-0">Rp {{ number_format($booking->pay_now, 0, ',', '.') }}</span>
+                  <span class="h5 text-success mb-0">Rp {{ number_format($booking->subtotal, 0, ',', '.') }}</span>
                 </div>
                 <div class="d-flex justify-content-between align-items-center">
                   <strong>Status Pembayaran:</strong>

@@ -86,12 +86,44 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <small class="text-muted">Total:</small>
-                                            <div class="h5 text-primary mb-0">Rp {{ number_format($booking->pay_now, 0, ',', '.') }}</div>
+                                            <div class="h5 text-primary mb-0">Rp {{ number_format($booking->subtotal, 0, ',', '.') }}</div>
                                         </div>
                                         <div class="text-end">
-                                            @if($booking->payment_status === 'paid')
-                                                <a href="{{ route('booking.invoice', $booking) }}" class="btn btn-sm btn-outline-primary mt-2" target="_blank">Invoice</a>
-                                            @endif
+                                        @if($booking->payment_status === 'paid')
+  <a href="{{ route('booking.invoice', $booking) }}"
+     class="btn btn-sm btn-outline-primary mt-2" target="_blank">Invoice</a>
+
+  @if($booking->testimonial)
+    {{-- EDIT testimoni (pakai data-api) --}}
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-success mt-2"
+      data-bs-toggle="modal"
+      data-bs-target="#testimonialModal"
+      {{-- data untuk prefilling --}}
+      data-mode="edit"
+      data-action="{{ route('booking.testimonial.update', $booking) }}"
+      data-rating="{{ $booking->testimonial->rating ?? 5 }}"
+      data-comment='@json($booking->testimonial->comment ?? "")'
+    >
+      Edit Testimoni
+    </button>
+  @else
+    {{-- TAMBAH testimoni (pakai data-api) --}}
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-primary mt-2"
+      data-bs-toggle="modal"
+      data-bs-target="#testimonialModal"
+      data-mode="add"
+      data-action="{{ route('booking.testimonial.store', $booking) }}"
+      data-rating="5"
+      data-comment=""
+    >
+      + Tambah Testimoni
+    </button>
+  @endif
+@endif
                                         </div>
                                     </div>
                                 </div>
@@ -145,6 +177,41 @@
                     </a>
                 </div>
             @endif
+
+            <!-- Modal Testimoni -->
+            <div class="modal fade" id="testimonialModal" tabindex="-1" aria-labelledby="testimonialModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <form id="testimonialForm" method="POST" class="modal-content">
+                    @csrf
+                    <input type="hidden" name="_method" id="testimonialMethod" value="POST">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="testimonialModalLabel">Tambah Testimoni</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                        <label class="form-label">Rating</label>
+                        <select class="form-select" name="rating" id="testimonialRating" required>
+                            <option value="5">★★★★★ - Sangat Puas</option>
+                            <option value="4">★★★★☆ - Puas</option>
+                            <option value="3">★★★☆☆ - Cukup</option>
+                            <option value="2">★★☆☆☆ - Kurang</option>
+                            <option value="1">★☆☆☆☆ - Buruk</option>
+                        </select>
+                        </div>
+                        <div class="mb-3">
+                        <label class="form-label">Komentar (opsional)</label>
+                        <textarea class="form-control" name="comment" id="testimonialComment" rows="4" placeholder="Ceritakan pengalamanmu..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Batal</button>
+                        <button class="btn btn-primary" type="submit" id="testimonialSubmit">Simpan</button>
+                    </div>
+                    </form>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -231,5 +298,123 @@ function regenerateSnapToken(bookingId) {
     });
 }
 </script>
+
+<script>
+  // Perbaiki bug kecil di fungsi kamu (selector & template string)
+  function regenerateSnapToken(bookingId) {
+      const button = document.querySelector(`button[onclick="regenerateSnapToken(${bookingId})"]`);
+      const originalText = button ? button.innerHTML : '';
+      if (button) { button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Memproses...'; button.disabled = true; }
+
+      fetch(`/booking/${bookingId}/regenerate-token`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          }
+      })
+      .then(r => r.json())
+      .then(data => {
+          if (button) { button.innerHTML = originalText; button.disabled = false; }
+          if (data.success) {
+              payWithSnapToken(data.snap_token, bookingId);
+          } else {
+              const errorMsg = data.error || 'Gagal membuat token pembayaran baru';
+              if (confirm(errorMsg + '\n\nApakah Anda ingin mencoba melalui halaman pembayaran?')) {
+                  window.location.href = `/booking/${bookingId}/pay`;
+              }
+          }
+      })
+      .catch(err => {
+          console.error(err);
+          if (button) { button.innerHTML = originalText; button.disabled = false; }
+          if (confirm('Terjadi kesalahan saat membuat token baru.\n\nApakah Anda ingin mencoba melalui halaman pembayaran?')) {
+              window.location.href = `/booking/${bookingId}/pay`;
+          }
+      });
+  }
+
+  // ===== Testimoni =====
+  let testimonialForm, testimonialMethod, testimonialRating, testimonialComment, testimonialSubmit;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    testimonialForm    = document.getElementById('testimonialForm');
+    testimonialMethod  = document.getElementById('testimonialMethod');
+    testimonialRating  = document.getElementById('testimonialRating');
+    testimonialComment = document.getElementById('testimonialComment');
+    testimonialSubmit  = document.getElementById('testimonialSubmit');
+
+    // 1) Prefill modal saat akan ditampilkan (sama untuk "Tambah" & "Edit")
+    const modalEl = document.getElementById('testimonialModal');
+    modalEl.addEventListener('show.bs.modal', (event) => {
+      const btn = event.relatedTarget; // tombol pemicu
+      if (!btn) return;
+
+      const mode    = btn.getAttribute('data-mode');          // 'add' | 'edit'
+      const action  = btn.getAttribute('data-action');        // URL action
+      const rating  = btn.getAttribute('data-rating') || '5'; // default 5
+      // data-comment bisa berupa JSON quoted string → parse aman
+      let commentRaw = btn.getAttribute('data-comment') || '';
+      try { commentRaw = JSON.parse(commentRaw); } catch(e) {}
+
+      // Set form
+      testimonialForm.setAttribute('action', action);
+      testimonialRating.value  = rating;
+      testimonialComment.value = commentRaw || '';
+
+      const label = document.getElementById('testimonialModalLabel');
+      if (mode === 'edit') {
+        testimonialMethod.value = 'PUT';
+        label.textContent = 'Edit Testimoni';
+        testimonialSubmit.textContent = 'Update';
+      } else {
+        testimonialMethod.value = 'POST';
+        label.textContent = 'Tambah Testimoni';
+        testimonialSubmit.textContent = 'Simpan';
+      }
+    });
+
+    // 2) Submit AJAX (punyamu)
+    testimonialForm.addEventListener('submit', submitTestimonialAjax);
+  });
+
+  async function submitTestimonialAjax(e){
+    e.preventDefault();
+    const btn = testimonialSubmit;
+    const original = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+    try {
+      const res = await fetch(this.action, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+        },
+        body: new FormData(this)
+      });
+
+      const ct = res.headers.get('content-type') || '';
+      const data = ct.includes('application/json') ? await res.json() : { success: res.ok };
+
+      if (!res.ok || !data.success) {
+        alert(data.message || 'Gagal menyimpan testimoni');
+      } else {
+        // Tutup modal dan reload halaman list
+        const modalEl = document.getElementById('testimonialModal');
+        const modal   = window.bootstrap?.Modal.getOrCreateInstance(modalEl);
+        modal?.hide();
+        window.location.href = "{{ route('user.bookings') }}";
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Gagal menyimpan testimoni');
+    } finally {
+      btn.disabled = false; btn.textContent = original;
+    }
+  }
+</script>
+
 
 </x-user>

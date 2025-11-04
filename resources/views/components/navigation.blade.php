@@ -5,7 +5,12 @@
 
 <nav class="navbar navbar-expand-lg fixed-top">
   <div class="container">
-    <a class="navbar-brand" href="{{ $home }}">Risaa Makeup</a>
+    <a class="navbar-brand" href="{{ $home }}">
+      <div class="logo-container">
+        <img src="{{ asset('images/logo.jpg') }}" alt="Logo Risaa Makeup" style="width: 50px; border-radius: 50%; margin-right: 10px;">
+        Risaa Makeup
+      </div>
+    </a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
@@ -24,6 +29,9 @@
         </li>
         <li class="nav-item">
           <a class="nav-link" href="{{ $onHome ? '#gallery' : $home.'#gallery' }}">Galeri</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ $onHome ? '#contact' : $home.'#contact' }}">Contact Us</a>
         </li>
       </ul>
 

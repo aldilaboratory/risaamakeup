@@ -53,7 +53,7 @@
               @endif
             </td>
             <td>
-              <div class="fw-semibold">Rp {{ number_format($booking->pay_now, 0, ',', '.') }}</div>
+              <div class="fw-semibold">Rp {{ number_format($booking->subtotal, 0, ',', '.') }}</div>
             </td>
             <td>
               @php

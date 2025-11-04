@@ -189,7 +189,7 @@
                                           <td>
                                             <h6 class="mb-0">
                                               <i class="mdi mdi-cash me-1 text-success"></i>
-                                              Rp {{ number_format($booking->pay_now, 0, ',', '.') }}
+                                              Rp {{ number_format($booking->subtotal, 0, ',', '.') }}
                                             </h6>
                                           </td>
                                           <td>

@@ -101,7 +101,7 @@
         @endif
         <tr class="total-row">
           <td colspan="3" class="right">Total Dibayar</td>
-          <td class="right">{{ $fmt($booking->pay_now ?? 0) }}</td>
+          <td class="right">{{ $fmt($booking->subtotal ?? 0) }}</td>
         </tr>
       </tbody>
     </table>

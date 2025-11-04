@@ -30,4 +30,10 @@ class Booking extends Model
     public function category() {
         return $this->belongsTo(Category::class);
     }
+
+    public function testimonial()
+    {
+        return $this->hasOne(\App\Models\Testimonial::class);
+    }
+
 }

@@ -10,8 +10,7 @@ class AdminOrderController extends Controller
 {
     public function index(Request $request)
     {
-        $q = Booking::with(['package','category'])
-            ->latest();
+        $q = Booking::with(['package','category'])->latest();
 
         if ($request->filled('status')) {
             $q->where('status', $request->string('status'));
@@ -30,13 +29,16 @@ class AdminOrderController extends Controller
 
     public function approve(Request $request, Booking $booking)
     {
-        // Gunakan enum yang sesuai di DB Anda. Misal sudah: pending/approved/rejected/completed/cancelled
-        $booking->update(['status' => 'approved']);
+        // map otomatis ke enum yang didukung DB
+        $newStatus = $this->supportsNewEnum() ? 'approved' : 'confirmed';
+        $booking->update(['status' => $newStatus]);
 
         if ($request->expectsJson()) {
+            // kirimkan status “new naming” ke UI agar konsisten
+            $uiStatus = $this->supportsNewEnum() ? $newStatus : ($this->toNew()[$newStatus] ?? $newStatus);
             return response()->json([
                 'success' => true,
-                'status'  => 'approved',
+                'status'  => $uiStatus,
                 'message' => 'Booking disetujui.',
             ]);
         }
@@ -46,21 +48,20 @@ class AdminOrderController extends Controller
 
     public function reject(Request $request, Booking $booking)
     {
-        // Simpan alasan jika ada (pastikan kolomnya ada, jika tidak hapus baris ini)
         if ($request->filled('rejection_reason')) {
+            // pastikan kolom ada; jika tidak ada, silakan hapus baris ini
             $booking->rejection_reason = $request->string('rejection_reason');
         }
 
-        // Sesuaikan dengan enum status di DB Anda: 'rejected' (baru) atau 'canceled' (lama)
         $newStatus = $this->supportsNewEnum() ? 'rejected' : 'canceled';
-
         $booking->status = $newStatus;
         $booking->save();
 
         if ($request->expectsJson()) {
+            $uiStatus = $this->supportsNewEnum() ? $newStatus : ($this->toNew()[$newStatus] ?? $newStatus);
             return response()->json([
                 'success' => true,
-                'status'  => $newStatus,
+                'status'  => $uiStatus,
                 'message' => 'Booking ditolak.',
             ]);
         }
@@ -74,40 +75,82 @@ class AdminOrderController extends Controller
             'status' => 'required|string',
         ]);
 
-        $status = $request->string('status');
+        $incoming = $request->string('status');
+        $supportsNew = $this->supportsNewEnum();
 
-        // Validasi status sederhana; bisa Anda perketat sesuai enum Anda
         $allowedNew = ['pending','approved','rejected','completed','cancelled'];
         $allowedOld = ['pending','confirmed','canceled','done'];
 
-        if (! in_array($status, array_merge($allowedNew, $allowedOld), true)) {
-            return $request->expectsJson()
-                ? response()->json(['success' => false, 'message' => 'Status tidak valid'], 422)
-                : back()->with('error', 'Status tidak valid');
+        // peta dua arah
+        $toNew = $this->toNew(); // confirmed->approved, canceled->rejected, done->completed
+        $toOld = $this->toOld(); // approved->confirmed, rejected->canceled, completed->done, cancelled->canceled
+
+        // Normalisasi ke enum DB yang aktif
+        $normalized = $incoming;
+        if ($supportsNew) {
+            if (isset($toNew[$incoming])) $normalized = $toNew[$incoming];
+            if (!in_array($normalized, $allowedNew, true)) {
+                return $this->jsonOrBack($request, false, 'Status tidak valid untuk enum baru', 422);
+            }
+        } else {
+            if (isset($toOld[$incoming])) $normalized = $toOld[$incoming];
+            if (!in_array($normalized, $allowedOld, true)) {
+                return $this->jsonOrBack($request, false, 'Status tidak valid untuk enum lama', 422);
+            }
         }
 
-        $booking->update(['status' => $status]);
+        try {
+            $booking->update(['status' => $normalized]);
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'status'  => $status,
-                'message' => 'Status berhasil diupdate.',
+            // untuk UI, kembalikan “new naming”
+            $uiStatus = $supportsNew ? $normalized : ($toNew[$normalized] ?? $normalized);
+
+            return $this->jsonOrBack($request, true, 'Status berhasil diupdate.', 200, [
+                'status' => $uiStatus,
             ]);
+        } catch (\Throwable $e) {
+            return $this->jsonOrBack($request, false, 'Gagal update status: '.$e->getMessage(), 500);
         }
-
-        return back()->with('success', 'Status berhasil diupdate.');
     }
 
-    /**
-     * Deteksi enum versi baru (approved/rejected/completed/cancelled) atau lama (confirmed/canceled/done).
-     * Sederhana: jika ada data dengan 'approved', anggap enum baru.
-     */
+    /** Deteksi enum versi baru */
     protected function supportsNewEnum(): bool
     {
-        return Booking::where('status', 'approved')->exists()
-            || Booking::where('status', 'rejected')->exists()
-            || Booking::where('status', 'completed')->exists()
-            || Booking::where('status', 'cancelled')->exists();
+        return Booking::whereIn('status', ['approved','rejected','completed','cancelled'])->exists();
+    }
+
+    /** Map old -> new */
+    protected function toNew(): array
+    {
+        return [
+            'confirmed' => 'approved',
+            'canceled'  => 'rejected',
+            'done'      => 'completed',
+        ];
+    }
+
+    /** Map new -> old */
+    protected function toOld(): array
+    {
+        return [
+            'approved'  => 'confirmed',
+            'rejected'  => 'canceled',
+            'completed' => 'done',
+            'cancelled' => 'canceled',
+        ];
+    }
+
+    /** Helper balikan JSON/redirect */
+    protected function jsonOrBack(Request $request, bool $success, string $message, int $code = 200, array $extra = [])
+    {
+        if ($request->expectsJson()) {
+            return response()->json(array_merge([
+                'success' => $success,
+                'message' => $message,
+            ], $extra), $code);
+        }
+        return $success
+            ? back()->with('success', $message)
+            : back()->with('error', $message);
     }
 }

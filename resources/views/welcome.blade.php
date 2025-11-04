@@ -138,27 +138,85 @@
     </section>
 
     <!-- Testimonials Section -->
-    <section class="py-5 bg-light">
-        <div class="container">
-            <h2 class="section-title">Testimoni</h2>
-            <div class="row g-4">
-                <div class="col-lg-6">
-                    <div class="testimonial-card">
-                        <p>"Risa made me feel absolutely stunning on my wedding day. The makeup was flawless and lasted throughout the entire celebration!"</p>
-                        <h5>Sarah Johnson</h5>
-                        <small class="text-muted">Bride 2024</small>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="testimonial-card">
-                        <p>"Professional, talented, and so easy to work with. Risa understood exactly what I wanted and delivered beyond my expectations."</p>
-                        <h5>Emily Chen</h5>
-                        <small class="text-muted">Bride 2023</small>
-                    </div>
-                </div>
+<section id="testimonials" class="py-5 bg-light">
+  <div class="container">
+    <h2 class="section-title">Testimoni</h2>
+
+    @if(isset($testimonials) && $testimonials->count())
+      <div class="row g-4">
+        @foreach($testimonials as $t)
+          @php
+            $booking   = $t->booking;
+            $name      = $booking?->name ?: 'Pelanggan';
+            $eventYear = optional(\Carbon\Carbon::parse($booking?->event_date))->format('Y');
+            $category  = $booking?->category?->name;
+            $pkgTitle  = $booking?->package?->title;
+            $rating    = (int) ($t->rating ?? 5);
+            $comment   = trim($t->comment ?? '');
+          @endphp
+
+          <div class="col-lg-6">
+            <div class="testimonial-card p-4 bg-white rounded-3 shadow-sm h-100">
+              <div class="mb-2" aria-label="Rating {{ $rating }} dari 5">
+                @for($i=1; $i<=5; $i++)
+                  <i class="fas fa-star {{ $i <= $rating ? 'text-warning' : 'text-muted' }}"></i>
+                @endfor
+              </div>
+
+              <p class="mb-3">"{{ $comment !== '' ? $comment : '-' }}"</p>
+
+              <h5 class="mb-0">{{ $name }}</h5>
+              <small class="text-muted">
+                {{ $category ? ucfirst($category) : 'Client' }}
+                {{ $eventYear ? ' ' . $eventYear : '' }}
+                @if($pkgTitle) • {{ $pkgTitle }} @endif
+              </small>
             </div>
+          </div>
+        @endforeach
+      </div>
+
+      {{-- Pagination --}}
+      <div class="mt-4 d-flex justify-content-center">
+        {{ $testimonials->onEachSide(1)->links('pagination::bootstrap-5') }}
+      </div>
+    @else
+      {{-- Fallback jika belum ada testimoni --}}
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="testimonial-card p-4 bg-white rounded-3 shadow-sm h-100">
+            <div class="mb-2">
+              <i class="fas fa-star text-warning"></i>
+              <i class="fas fa-star text-warning"></i>
+              <i class="fas fa-star text-warning"></i>
+              <i class="fas fa-star text-warning"></i>
+              <i class="fas fa-star text-warning"></i>
+            </div>
+            <p>"-"</p>
+            <h5>Sarah Johnson</h5>
+            <small class="text-muted">Bride 2024</small>
+          </div>
         </div>
-    </section>
+        <div class="col-lg-6">
+          <div class="testimonial-card p-4 bg-white rounded-3 shadow-sm h-100">
+            <div class="mb-2">
+              <i class="fas fa-star text-warning"></i>
+              <i class="fas fa-star text-warning"></i>
+              <i class="fas fa-star text-warning"></i>
+              <i class="fas fa-star text-warning"></i>
+              <i class="fas fa-star text-muted"></i>
+            </div>
+            <p>"-"</p>
+            <h5>Emily Chen</h5>
+            <small class="text-muted">Bride 2023</small>
+          </div>
+        </div>
+      </div>
+    @endif
+  </div>
+</section>
+
+
 
     <!-- Contact Section -->
     <section id="contact" class="py-5">
@@ -170,7 +228,7 @@
             <div class="col-lg-8">
                 <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
                 <a
-                    href="https://wa.me/6281234567890?text=Halo%20Risaa%20Makeup%2C%20saya%20ingin%20konsultasi%20tentang%20paket%20makeup.%20Tanggal%3A%20_____%20Lokasi%3A%20_____"
+                    href="https://wa.me/6283116035639?text=Halo%20Risaa%20Makeup%2C%20saya%20ingin%20konsultasi%20tentang%20paket%20makeup.%20"
                     class="btn btn-success btn-lg px-4 shadow-sm"
                     target="_blank"
                     rel="noopener"

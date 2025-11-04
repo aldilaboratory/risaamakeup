@@ -74,7 +74,7 @@
             Booking
         </a>
           <span class="mx-3">atau</span>
-          <a href="https://wa.me/6281234567890?text={{ urlencode('Halo, saya minat paket: '.$package->title.' '.$package->category?->name) }}"
+          <a href="https://wa.me/6283116035639?text={{ urlencode('Halo, saya minat paket: '.$package->title.' '.$package->category?->name) }}"
              class="btn btn-outline-success rounded-pill btn-lg">
             <small>Konsultasi via WhatsApp</small>
           </a>

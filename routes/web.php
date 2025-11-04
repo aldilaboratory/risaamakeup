@@ -11,8 +11,10 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserTestimonialController;
 use App\Models\Category;
 use App\Models\Package;
+use App\Models\Testimonial;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -28,7 +30,17 @@ Route::get('/', function () {
         ->orderBy('name')   // atau 'id', bebas
         ->get();
 
-    return view('welcome', compact('categories'));
+    // Pagination 6 per halaman, hanya booking paid
+    $testimonials = Testimonial::with(['booking.package','booking.category'])
+        ->whereHas('booking', fn($q) => $q->where('payment_status', 'paid'))
+        ->latest()
+        ->paginate(6)                 // <= ubah jumlah sesuai kebutuhan
+        ->withQueryString();
+
+    // Supaya setelah pindah halaman langsung lompat ke section testimoni
+    $testimonials->fragment('testimonials');
+
+    return view('welcome', compact('categories','testimonials'));
 });
 
 Route::scopeBindings()->group(function () {
@@ -93,6 +105,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/booking/{booking}/invoice', [BookingController::class, 'invoice'])
         ->name('booking.invoice');
+
+    Route::post('/my-bookings/{booking}/testimonial', [UserTestimonialController::class, 'store'])->name('booking.testimonial.store');
+    Route::put('/my-bookings/{booking}/testimonial', [UserTestimonialController::class, 'update'])->name('booking.testimonial.update');
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
