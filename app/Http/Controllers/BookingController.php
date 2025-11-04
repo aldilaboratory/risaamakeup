@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Package;
 use App\Models\Booking;
+use App\Services\FonnteWhatsApp;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,14 +18,14 @@ class BookingController extends Controller
 {
     public function create(Category $category, Package $package)
     {
-        return view('booking.create', compact('category','package'));
+        return view('booking.create', compact('category', 'package'));
     }
 
     public function store(Request $request, Category $category, Package $package)
     {
-        // Calculate minimum date (2 days from today)
+        // Minimal 2 hari dari hari ini
         $minDate = now()->addDays(2)->format('Y-m-d');
-        
+
         $data = $request->validate([
             'city'        => 'nullable|string|max:100',
             'event_date'  => 'required|date|after_or_equal:' . $minDate,
@@ -39,14 +40,10 @@ class BookingController extends Controller
             'event_date.after_or_equal' => 'Tanggal acara minimal 2 hari dari hari ini.',
         ]);
 
-        // Set fixed values for simplified booking
-        $qty        = 1;
-        $unitPrice  = (int) $package->price;
-        $subtotal   = $unitPrice;
-        $dpPercent  = 100;
-        $payNow     = $unitPrice;
+        // Sederhana: 1 item, bayar full
+        $unitPrice = (int) $package->price;
+        $subtotal  = $unitPrice;
 
-        // ⬅️ SIMPAN ke variabel!
         $booking = Booking::create([
             'user_id'      => auth()->id(),
             'package_id'   => $package->id,
@@ -60,9 +57,9 @@ class BookingController extends Controller
             'subtotal'     => $subtotal,
             'notes'        => $data['notes'] ?? null,
             'status'       => 'pending',
+            // payment_status default-nya biarkan null / 'pending' sesuai skema tabelmu
         ]);
 
-        // Redirect ke halaman yang memunculkan Snap
         return redirect()->route('booking.pay.page', $booking);
     }
 
@@ -74,13 +71,12 @@ class BookingController extends Controller
         MidConfig::$is3ds        = true;
     }
 
-    // Buat snap token
+    /** Buat Snap Token + simpan order_id, snap_token, expires_at */
     private function createSnapToken(Booking $booking, Package $package): string
     {
         $this->midConfig();
 
-        // Gunakan order_id yang sudah ada atau buat yang baru
-        $orderId = $booking->midtrans_order_id ?: 'BOOK-'.now()->format('YmdHis').'-'.Str::upper(Str::random(6));
+        $orderId = $booking->midtrans_order_id ?: 'BOOK-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6));
 
         $params = [
             'transaction_details' => [
@@ -104,64 +100,121 @@ class BookingController extends Controller
             ],
             'expiry' => [
                 'start_time' => now()->format('Y-m-d H:i:s O'),
-                'unit' => 'hour',
-                'duration' => 1
+                'unit'       => 'hour',
+                'duration'   => 1,
             ],
         ];
 
         $snapToken = MidSnap::getSnapToken($params);
-        
-        // Simpan order_id, snap_token, dan expires_at ke database
+
         $booking->update([
-            'midtrans_order_id' => $orderId,
+            'midtrans_order_id'   => $orderId,
             'midtrans_snap_token' => $snapToken,
-            'expires_at' => now()->addHour(), // Expired 1 jam dari sekarang
+            'expires_at'          => now()->addHour(),
         ]);
 
         return $snapToken;
     }
 
-    // Halaman pemicu Snap
+    /** Map status Midtrans ke status internal */
+    private function mapMidtransStatus(string $trx, ?string $fraud = null): string
+    {
+        $map = [
+            'capture'    => ($fraud === 'challenge') ? 'pending' : 'paid',
+            'settlement' => 'paid',
+            'pending'    => 'pending',
+            'deny'       => 'failed',
+            'expire'     => 'expired',
+            'cancel'     => 'cancel',
+            'failure'    => 'failed',
+        ];
+        return $map[$trx] ?? 'pending';
+    }
+
+    /** Update status + kirim WA kalau transisi jadi paid */
+    private function updatePaymentStatusAndNotify(Booking $booking, string $newStatus, $payload = null): void
+    {
+        $oldStatus = $booking->payment_status;
+
+        $booking->update([
+            'payment_status'   => $newStatus,
+            'midtrans_payload' => $payload ? (is_string($payload) ? $payload : json_encode($payload)) : $booking->midtrans_payload,
+        ]);
+
+        // Hanya kirim ketika barusan jadi paid
+        if ($oldStatus !== 'paid' && $newStatus === 'paid') {
+            $this->sendPaidWhatsapp($booking);
+        }
+
+        \Log::info('[WA] updatePaymentStatusAndNotify', ['old' => $oldStatus, 'new' => $newStatus, 'booking_id' => $booking->id]);
+\Log::info('[WA] sendPaidWhatsapp CALLED', ['booking_id' => $booking->id, 'phone' => $booking->phone]);
+
+    }
+
+    /** Kirim WA via Fonnte untuk pembayaran berhasil */
+    private function sendPaidWhatsapp(Booking $booking): void
+    {
+        // Hindari dobel kirim kalau sudah pernah (opsional bila kamu pakai kolom timestamp)
+        if (!empty($booking->whatsapp_paid_sent_at)) {
+            return;
+        }
+
+        $orderId = $booking->midtrans_order_id ?? ('BOOK-' . $booking->id);
+        $name    = $booking->name;
+        $pkg     = $booking->package->title;
+        $dateStr = $booking->event_date->format('d M Y');
+        $time    = $booking->event_time;
+        $amount  = number_format((int) $booking->subtotal, 0, ',', '.');
+
+        $thankYouUrl = route('booking.thank-you', ['booking' => $booking->id]);
+
+        $message = <<<TXT
+        Halo {$name}, pembayaran Anda *BERHASIL* ✅
+
+        Rincian Pesanan:
+        • Order ID: {$orderId}
+        • Paket: {$pkg}
+        • Tanggal Acara: {$dateStr} {$time}
+        • Total: Rp {$amount}
+
+        Terima kasih telah mempercayai Risaa Makeup 🙏
+        Lihat detail pesanan:
+        {$thankYouUrl}
+
+        Jika ada pertanyaan, cukup balas pesan ini ya.
+        TXT;
+
+        try {
+            $ok = FonnteWhatsApp::send($booking->phone, $message);
+            if ($ok) {
+                $booking->forceFill(['whatsapp_paid_sent_at' => now()])->save();
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Fonnte send failed: ' . $e->getMessage());
+        }
+    }
+
+    /** Halaman yang memicu Snap */
     public function payPage(Booking $booking)
     {
-        // Cek status pembayaran terlebih dahulu
         if ($booking->payment_status === 'paid') {
-            // Jika sudah paid, redirect ke thank you page
             return redirect()->route('booking.thank-you', $booking);
         }
 
-        // Jika ada midtrans_order_id, cek status terbaru dari Midtrans
         if ($booking->midtrans_order_id) {
             $this->midConfig();
             try {
                 $status = \Midtrans\Transaction::status($booking->midtrans_order_id);
-                $trx = $status->transaction_status ?? 'pending';
-                $fraud = $status->fraud_status ?? null;
+                $trx    = $status->transaction_status ?? 'pending';
+                $fraud  = $status->fraud_status ?? null;
 
-                $map = [
-                    'capture'    => ($fraud === 'challenge') ? 'pending' : 'paid',
-                    'settlement' => 'paid',
-                    'pending'    => 'pending',
-                    'deny'       => 'failed',
-                    'expire'     => 'expired',
-                    'cancel'     => 'cancel',
-                    'failure'    => 'failed',
-                ];
+                $newStatus = $this->mapMidtransStatus($trx, $fraud);
+                $this->updatePaymentStatusAndNotify($booking, $newStatus, $status);
 
-                $newStatus = $map[$trx] ?? 'pending';
-                
-                // Update status di database
-                $booking->update([
-                    'payment_status' => $newStatus,
-                    'midtrans_payload' => json_encode($status),
-                ]);
-
-                // Jika status sudah paid, redirect ke thank you page
                 if ($newStatus === 'paid') {
                     return redirect()->route('booking.thank-you', $booking);
                 }
 
-                // Jika masih pending/unpaid dan ada snap_token, gunakan yang existing
                 if (in_array($newStatus, ['pending', 'unpaid']) && $booking->midtrans_snap_token) {
                     return view('booking.snap', [
                         'booking'   => $booking,
@@ -170,16 +223,13 @@ class BookingController extends Controller
                     ]);
                 }
 
-                // Jika expired atau failed, buat order baru
                 if (in_array($newStatus, ['expired', 'cancel', 'failed'])) {
-                    // Reset order_id dan snap_token untuk membuat yang baru
                     $booking->update([
-                        'midtrans_order_id' => null,
+                        'midtrans_order_id'   => null,
                         'midtrans_snap_token' => null,
                     ]);
                 }
             } catch (\Exception $e) {
-                // Jika error saat cek status, gunakan snap token yang ada jika tersedia
                 if ($booking->midtrans_snap_token && in_array($booking->payment_status, ['pending', 'unpaid'])) {
                     return view('booking.snap', [
                         'booking'   => $booking,
@@ -190,7 +240,6 @@ class BookingController extends Controller
             }
         }
 
-        // Jika sudah ada snap_token dan status masih pending/unpaid, gunakan yang existing
         if ($booking->midtrans_snap_token && in_array($booking->payment_status, ['pending', 'unpaid'])) {
             return view('booking.snap', [
                 'booking'   => $booking,
@@ -199,7 +248,6 @@ class BookingController extends Controller
             ]);
         }
 
-        // Generate snap token baru jika belum ada atau expired/failed
         $package   = $booking->package;
         $snapToken = $this->createSnapToken($booking, $package);
 
@@ -210,9 +258,11 @@ class BookingController extends Controller
         ]);
     }
 
-    // Callback tanpa webhook (cek status manual)
-    public function checkStatus(Request $req) {
+    /** Polling tanpa webhook (manual check) */
+    public function checkStatus(Request $req)
+    {
         $this->midConfig();
+
         $orderId = $req->string('order_id');
         $booking = Booking::where('midtrans_order_id', $orderId)->firstOrFail();
 
@@ -220,136 +270,110 @@ class BookingController extends Controller
         $trx    = $status->transaction_status ?? 'pending';
         $fraud  = $status->fraud_status ?? null;
 
-        $map = [
-            'capture'    => ($fraud === 'challenge') ? 'pending' : 'paid',
-            'settlement' => 'paid',
-            'pending'    => 'pending',
-            'deny'       => 'failed',
-            'expire'     => 'expired',
-            'cancel'     => 'cancel',
-            'failure'    => 'failed',
-        ];
-        $booking->update([
-            'payment_status'  => $map[$trx] ?? 'pending',
-            'midtrans_payload'=> json_encode($status),
-        ]);
+        $newStatus = $this->mapMidtransStatus($trx, $fraud);
+        $this->updatePaymentStatusAndNotify($booking, $newStatus, $status);
 
         return response()->json(['ok' => true, 'payment_status' => $booking->payment_status]);
     }
 
-    // Webhook (kalau punya URL publik)
+    /** Webhook Midtrans */
     public function notificationHandler()
     {
         $this->midConfig();
+
         $notif = new \Midtrans\Notification();
 
         $orderId = $notif->order_id;
-        $status  = $notif->transaction_status;
+        $trx     = $notif->transaction_status;
         $type    = $notif->payment_type;
         $fraud   = $notif->fraud_status ?? null;
 
         $booking = Booking::where('midtrans_order_id', $orderId)->first();
-        if (!$booking) return response()->json(['message'=>'booking not found'], 404);
+        if (!$booking) return response()->json(['message' => 'booking not found'], 404);
 
-        $map = [
-            'capture'    => ($fraud === 'challenge') ? 'pending' : 'paid',
-            'settlement' => 'paid',
-            'pending'    => 'pending',
-            'deny'       => 'failed',
-            'expire'     => 'expired',
-            'cancel'     => 'cancel',
-            'failure'    => 'failed',
-        ];
+        $newStatus = $this->mapMidtransStatus($trx, $fraud);
+
+        // simpan info tambahan VA/PDF
         $va  = $notif->va_numbers[0]->va_number ?? null;
         $pdf = $notif->pdf_url ?? null;
 
-        $booking->update([
-            'payment_status'          => $map[$status] ?? 'pending',
+        $booking->fill([
             'midtrans_transaction_id' => $notif->transaction_id ?? null,
             'midtrans_payment_type'   => $type,
             'midtrans_va_number'      => $va,
             'midtrans_pdf_url'        => $pdf,
-            'midtrans_payload'        => json_encode($notif),
-        ]);
+        ])->save();
 
-        return response()->json(['message'=>'ok']);
+        // update status + kirim WA bila perlu
+        $this->updatePaymentStatusAndNotify($booking, $newStatus, $notif);
+
+        return response()->json(['message' => 'ok']);
     }
 
-    // Thank you page after successful payment
+    /** Thank you page */
     public function thankYou(Booking $booking)
     {
         return view('booking.thank-you', compact('booking'));
     }
 
-    // User booking tracking page
+    /** Halaman pesanan user */
     public function userBookings()
     {
-        $bookings = \App\Models\Booking::with(['package','category','testimonial'])
-        ->where('user_id', auth()->id())
-        ->latest()->get();
+        $bookings = Booking::with(['package', 'category', 'testimonial'])
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->get();
 
         return view('booking.user-bookings', compact('bookings'));
     }
 
-    // Regenerate snap token for expired tokens
+    /** Regenerate Snap Token */
     public function regenerateSnapToken(Booking $booking)
     {
-        // Pastikan booking milik user yang sedang login
         if ($booking->user_id !== auth()->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Pastikan booking masih pending atau unpaid
         if (!in_array($booking->payment_status, ['pending', 'unpaid'])) {
             return response()->json(['error' => 'Booking sudah dibayar atau tidak valid'], 400);
         }
 
-        // Cek apakah booking sudah expired (lebih dari 1 jam)
         if ($booking->expires_at && now()->greaterThan($booking->expires_at)) {
             return response()->json(['error' => 'Waktu pembayaran sudah habis. Silakan buat pesanan baru.'], 400);
         }
 
         try {
-            // Generate snap token baru
-            $package = $booking->package;
+            $package   = $booking->package;
             $snapToken = $this->createSnapToken($booking, $package);
-            
+
             return response()->json([
-                'success' => true,
-                'snap_token' => $snapToken
+                'success'    => true,
+                'snap_token' => $snapToken,
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Gagal membuat token pembayaran: ' . $e->getMessage()
+                'error' => 'Gagal membuat token pembayaran: ' . $e->getMessage(),
             ], 500);
         }
     }
 
+    /** Invoice PDF */
     public function invoice(Booking $booking)
     {
-        // Otorisasi sederhana: pemilik booking atau admin
+        // Otorisasi sederhana
         if (method_exists($booking, 'user_id') && $booking->user_id) {
             if (Auth::id() !== (int) $booking->user_id && Auth::user()?->role !== 'admin') {
                 abort(403);
             }
         } else {
-            // Kalau tidak ada user_id di tabel, minimal pakai login check
             if (!Auth::check()) abort(403);
         }
 
-        // (Opsional) jika mau batasi hanya yang sudah bayar:
-        // if ($booking->payment_status !== 'paid') abort(403, 'Invoice tersedia setelah pembayaran.');
+        $booking->load(['package', 'category']);
 
-        $booking->load(['package','category']); // pastikan relasi siap
+        $pdf = Pdf::loadView('booking.invoice', ['booking' => $booking])->setPaper('a4');
+        $fileName = 'Invoice-RisaaMakeup-#' . $booking->id . '.pdf';
 
-        $pdf = Pdf::loadView('booking.invoice', [
-            'booking' => $booking,
-        ])->setPaper('a4');
-
-        $fileName = 'Invoice-RisaaMakeup-#'.$booking->id.'.pdf';
-
-        // download() untuk unduh langsung, stream() kalau mau buka di tab
         return $pdf->stream($fileName);
-        // return $pdf->stream($fileName);
     }
 }

@@ -32,7 +32,7 @@
                 <div class="col-lg-3">
                     <h6>Contact Info</h6>
                     <ul class="list-unstyled">
-                        <li><i class="fas fa-phone me-2"></i>+62 888 999 777</li>
+                        <li><i class="fas fa-phone me-2"></i>+62 83116035639</li>
                         <li><i class="fas fa-envelope me-2"></i>info@risaamakeup.my.id</li>
                         <li><i class="fas fa-map-marker-alt me-2"></i>Denpasar, Bali</li>
                     </ul>
